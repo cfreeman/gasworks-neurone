@@ -18,6 +18,12 @@
  */
 package main
 
+// #cgo CFLAGS: -Wno-error -I/opt/local/include -I/opt/local/include/opencv
+// #cgo LDFLAGS: -L/opt/local/lib -lopencv_highgui -lopencv_core
+// #include "cv.h"
+// #include "highgui.h"
+import "C"
+
 import (
 		"fmt"
 		"log"
@@ -26,6 +32,7 @@ import (
 		"encoding/binary"
 		"time"
 		"io"
+		// "unsafe"
 )
 
 // updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
@@ -56,10 +63,37 @@ func main() {
 
     // When connecting to an arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
-
 	updateArduinoEnergy(0.8, s)
 
+	camera := C.cvCaptureFromCAM(-1)
+	C.cvQueryFrame(camera)
+
+	// prev = cvQueryFrame
+	// while not done.
+	// 	next = cvQueryFrame
+	// 	cvCalcOpticalFlowFarneback
+	//	normalise optical flow.
+	//	use optical flow as an increase to energy level.
+	//  update arduino energy level.
+	//  prev = next
+	//
+	//
+	//
+	// Calculate optical flow for each pixel
+	// http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html#void calcOpticalFlowFarneback(InputArray prev, InputArray next, InputOutputArray flow, double pyr_scale, int levels, int winsize, int iterations, int poly_n, double poly_sigma, int flags)
+	// Farneback.
+	//
+	// normalise optical flow for each pixel into a single scalar value for whole frame.
+	// this is the change in energy level for the neuron.
+	//
+
+	// file := C.CString("foo.png")
+	// C.cvSaveImage(file, unsafe.Pointer(frame), nil)
+	// C.free(unsafe.Pointer(file))
+
+	C.cvReleaseCapture(&camera)
+
     for {
-    	// Make sure the port statys open, otherwise the arduino will reset as soon as it discconects.
+    	// Make sure the port stays open, otherwise the arduino will reset as soon as it discconects.
     }
 }
