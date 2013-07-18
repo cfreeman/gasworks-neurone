@@ -19,20 +19,21 @@
 package main
 
 // #cgo CFLAGS: -Wno-error -I/opt/local/include -I/opt/local/include/opencv
-// #cgo LDFLAGS: -L/opt/local/lib -lopencv_highgui -lopencv_core
+// #cgo LDFLAGS: -L/opt/local/lib -lopencv_highgui -lopencv_core -lopencv_video
 // #include "cv.h"
 // #include "highgui.h"
 import "C"
 
 import (
 		"fmt"
-		"log"
-		"github.com/huin/goserial"
+		// "log"
+		// "github.com/huin/goserial"
 		"bytes"
 		"encoding/binary"
 		"time"
 		"io"
-		// "unsafe"
+		"unsafe"
+		"math"
 )
 
 // updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
@@ -55,18 +56,15 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
 func main() {
 	fmt.Printf("Gasworks neruon.\n")
 
-	c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
-	s, err := goserial.OpenPort(c)
-    if err != nil {
-		log.Fatal(err)
-    }
+	// c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
+	// s, err := goserial.OpenPort(c)
+ //    if err != nil {
+	// 	log.Fatal(err)
+ //    }
 
-    // When connecting to an arduino, you need to wait a little while it resets.
-	time.Sleep(1 * time.Second)
-	updateArduinoEnergy(0.8, s)
-
-	camera := C.cvCaptureFromCAM(-1)
-	C.cvQueryFrame(camera)
+ //    // When connecting to an arduino, you need to wait a little while it resets.
+	// time.Sleep(1 * time.Second)
+	// updateArduinoEnergy(0.8, s)
 
 	// prev = cvQueryFrame
 	// while not done.
@@ -91,9 +89,53 @@ func main() {
 	// C.cvSaveImage(file, unsafe.Pointer(frame), nil)
 	// C.free(unsafe.Pointer(file))
 
-	C.cvReleaseCapture(&camera)
+	camera := C.cvCaptureFromCAM(-1)
+	fmt.Printf("Grabbing Frame\n")
 
-    for {
-    	// Make sure the port stays open, otherwise the arduino will reset as soon as it discconects.
-    }
+	prev := C.cvCloneImage(C.cvQueryFrame(camera))
+
+
+	flow := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_32F, 2)
+	prevG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
+	nextG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
+
+	time.Sleep(1 * time.Second)
+	fmt.Printf("Grabbing Frame\n")
+	C.cvGrabFrame(camera)
+	next := C.cvCloneImage(C.cvQueryFrame(camera))
+
+	// Make captured frames gray scale.
+	C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
+	C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
+
+	C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
+
+	var x,y C.int
+
+	var dx, dy float64
+
+	for y = 0; y < prev.height; y++ {
+		for x = 0; x < prev.width; x++ {
+			value := C.cvGet2D(unsafe.Pointer(flow), y, x)
+
+			dx += math.Abs(float64(value.val[0]))
+			dy += math.Abs(float64(value.val[1]))
+		}
+	}
+
+	fmt.Printf("%f, %f\n", dx, dy)
+
+	// Make sure the port stays open, otherwise the arduino will reset as soon as it discconects.
+	file := C.CString("a.png")
+	C.cvSaveImage(file, unsafe.Pointer(prev), nil)
+	C.free(unsafe.Pointer(file))
+
+	file = C.CString("b.png")
+	C.cvSaveImage(file, unsafe.Pointer(next), nil)
+	C.free(unsafe.Pointer(file))
+
+    C.cvReleaseImage(&prev)
+    C.cvReleaseImage(&next)
+    C.cvReleaseImage(&flow)
+    C.cvReleaseCapture(&camera)
 }
