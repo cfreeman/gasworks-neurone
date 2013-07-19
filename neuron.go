@@ -26,11 +26,11 @@ import "C"
 
 import (
 		"fmt"
-		// "log"
-		// "github.com/huin/goserial"
+		"log"
+		"github.com/huin/goserial"
 		"bytes"
 		"encoding/binary"
-		"time"
+		// "time"
 		"io"
 		"unsafe"
 		"math"
@@ -53,14 +53,44 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
     return nil
 }
 
+func calcDeltaEnergy(flow *C.IplImage) float64 {
+	var i C.int
+	var dx, dy float64
+
+	// Accumulate the change in flow across all the pixels.
+	totalPixels := flow.width * flow.height
+	for i = 0; i < totalPixels; i++ {
+		value := C.cvGet2D(unsafe.Pointer(flow), i / flow.width, i % flow.width)
+		dx += math.Abs(float64(value.val[0]))
+		dy += math.Abs(float64(value.val[1]))
+	}
+
+	// The magnitude of accumulated flow forms our change in energy for the frame.
+	deltaE := math.Sqrt((dx * dx) + (dy * dy))
+
+	// Clamp the energy to start at 0 for 'still' frames with little/no motion.
+	//fmt.Printf("%f, %f: %f\n", dx, dy, deltaE)
+	deltaE = math.Max(0.0, (deltaE - 250000))
+
+	// Scale the flow to be less than 0.1 for 'active' frames with lots of motion.
+	//fmt.Printf("%f\n", deltaE)
+	deltaE = deltaE / 10000000
+	//fmt.Printf("%f\n", deltaE)
+
+	return deltaE
+}
+
 func main() {
 	fmt.Printf("Gasworks neruon.\n")
 
-	// c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
-	// s, err := goserial.OpenPort(c)
- //    if err != nil {
-	// 	log.Fatal(err)
- //    }
+	c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
+	s, err := goserial.OpenPort(c)
+    if err != nil {
+		log.Fatal(err)
+    }
+
+    var energy float32
+    energy = 0.0
 
  //    // When connecting to an arduino, you need to wait a little while it resets.
 	// time.Sleep(1 * time.Second)
@@ -90,52 +120,45 @@ func main() {
 	// C.free(unsafe.Pointer(file))
 
 	camera := C.cvCaptureFromCAM(-1)
-	fmt.Printf("Grabbing Frame\n")
-
 	prev := C.cvCloneImage(C.cvQueryFrame(camera))
-
 
 	flow := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_32F, 2)
 	prevG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
 	nextG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
 
-	time.Sleep(1 * time.Second)
-	fmt.Printf("Grabbing Frame\n")
-	C.cvGrabFrame(camera)
-	next := C.cvCloneImage(C.cvQueryFrame(camera))
+	for i := 0; i < 500; i++ {
+		C.cvGrabFrame(camera)
+		next := C.cvCloneImage(C.cvQueryFrame(camera))
 
-	// Make captured frames gray scale.
-	C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
-	C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
+		// Convert the captured frames to greyscale.
+		C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
+		C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
 
-	C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
+		C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
 
-	var x,y C.int
+		delta := float32(calcDeltaEnergy(flow))
+		energy += delta
+		fmt.Printf("energy: %f %f\n", energy, delta)
+		updateArduinoEnergy(energy, s)
 
-	var dx, dy float64
-
-	for y = 0; y < prev.height; y++ {
-		for x = 0; x < prev.width; x++ {
-			value := C.cvGet2D(unsafe.Pointer(flow), y, x)
-
-			dx += math.Abs(float64(value.val[0]))
-			dy += math.Abs(float64(value.val[1]))
-		}
+		C.cvReleaseImage(&prev)
+		prev = next
 	}
 
-	fmt.Printf("%f, %f\n", dx, dy)
-
-	// Make sure the port stays open, otherwise the arduino will reset as soon as it discconects.
-	file := C.CString("a.png")
-	C.cvSaveImage(file, unsafe.Pointer(prev), nil)
-	C.free(unsafe.Pointer(file))
-
-	file = C.CString("b.png")
-	C.cvSaveImage(file, unsafe.Pointer(next), nil)
-	C.free(unsafe.Pointer(file))
-
     C.cvReleaseImage(&prev)
-    C.cvReleaseImage(&next)
+
+    C.cvReleaseImage(&nextG)
+    C.cvReleaseImage(&prevG)
     C.cvReleaseImage(&flow)
     C.cvReleaseCapture(&camera)
+
+
+	// Make sure the port stays open, otherwise the arduino will reset as soon as it discconects.
+	// file := C.CString("a.png")
+	// C.cvSaveImage(file, unsafe.Pointer(prev), nil)
+	// C.free(unsafe.Pointer(file))
+
+	// file = C.CString("b.png")
+	// C.cvSaveImage(file, unsafe.Pointer(next), nil)
+	// C.free(unsafe.Pointer(file))
 }
