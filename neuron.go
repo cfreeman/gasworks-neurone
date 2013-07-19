@@ -92,32 +92,11 @@ func main() {
     var energy float32
     energy = 0.0
 
- //    // When connecting to an arduino, you need to wait a little while it resets.
+    // When connecting to an arduino, you need to wait a little while it resets.
 	// time.Sleep(1 * time.Second)
-	// updateArduinoEnergy(0.8, s)
 
 	// prev = cvQueryFrame
 	// while not done.
-	// 	next = cvQueryFrame
-	// 	cvCalcOpticalFlowFarneback
-	//	normalise optical flow.
-	//	use optical flow as an increase to energy level.
-	//  update arduino energy level.
-	//  prev = next
-	//
-	//
-	//
-	// Calculate optical flow for each pixel
-	// http://docs.opencv.org/modules/video/doc/motion_analysis_and_object_tracking.html#void calcOpticalFlowFarneback(InputArray prev, InputArray next, InputOutputArray flow, double pyr_scale, int levels, int winsize, int iterations, int poly_n, double poly_sigma, int flags)
-	// Farneback.
-	//
-	// normalise optical flow for each pixel into a single scalar value for whole frame.
-	// this is the change in energy level for the neuron.
-	//
-
-	// file := C.CString("foo.png")
-	// C.cvSaveImage(file, unsafe.Pointer(frame), nil)
-	// C.free(unsafe.Pointer(file))
 
 	camera := C.cvCaptureFromCAM(-1)
 	prev := C.cvCloneImage(C.cvQueryFrame(camera))
