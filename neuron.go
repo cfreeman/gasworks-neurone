@@ -25,15 +25,15 @@ package main
 import "C"
 
 import (
-		"fmt"
-		"log"
-		"github.com/huin/goserial"
-		"bytes"
-		"encoding/binary"
-		// "time"
-		"io"
-		"unsafe"
-		"math"
+	"bytes"
+	"encoding/binary"
+	"fmt"
+	"github.com/huin/goserial"
+	"log"
+	// "time"
+	"io"
+	"math"
+	"unsafe"
 )
 
 // updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
@@ -46,11 +46,11 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
 	}
 
 	_, err = serialPort.Write(buf.Bytes())
-    if err != nil {
+	if err != nil {
 		return err
-    }
+	}
 
-    return nil
+	return nil
 }
 
 func calcDeltaEnergy(flow *C.IplImage) float64 {
@@ -60,7 +60,7 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 	// Accumulate the change in flow across all the pixels.
 	totalPixels := flow.width * flow.height
 	for i = 0; i < totalPixels; i++ {
-		value := C.cvGet2D(unsafe.Pointer(flow), i / flow.width, i % flow.width)
+		value := C.cvGet2D(unsafe.Pointer(flow), i/flow.width, i%flow.width)
 		dx += math.Abs(float64(value.val[0]))
 		dy += math.Abs(float64(value.val[1]))
 	}
@@ -85,14 +85,14 @@ func main() {
 
 	c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
 	s, err := goserial.OpenPort(c)
-    if err != nil {
+	if err != nil {
 		log.Fatal(err)
-    }
+	}
 
-    var energy float32
-    energy = 0.0
+	var energy float32
+	energy = 0.0
 
-    // When connecting to an arduino, you need to wait a little while it resets.
+	// When connecting to an arduino, you need to wait a little while it resets.
 	// time.Sleep(1 * time.Second)
 
 	// prev = cvQueryFrame
@@ -124,13 +124,12 @@ func main() {
 		prev = next
 	}
 
-    C.cvReleaseImage(&prev)
+	C.cvReleaseImage(&prev)
 
-    C.cvReleaseImage(&nextG)
-    C.cvReleaseImage(&prevG)
-    C.cvReleaseImage(&flow)
-    C.cvReleaseCapture(&camera)
-
+	C.cvReleaseImage(&nextG)
+	C.cvReleaseImage(&prevG)
+	C.cvReleaseImage(&flow)
+	C.cvReleaseCapture(&camera)
 
 	// Make sure the port stays open, otherwise the arduino will reset as soon as it discconects.
 	// file := C.CString("a.png")
