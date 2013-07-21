@@ -18,8 +18,12 @@
  */
 package main
 
-// #cgo CFLAGS: -Wno-error -I/opt/local/include -I/opt/local/include/opencv
-// #cgo LDFLAGS: -L/opt/local/lib -lopencv_highgui -lopencv_core -lopencv_video
+// #cgo darwin CFLAGS: -I/opt/local/include -I/opt/local/include/opencv
+// #cgo linux CFLAGS: -I/usr/include -I/usr/include/opencv
+// #cgo CFLAGS: -Wno-error
+// #cgo darwin LDFLAGS: -L/opt/local/lib
+// #cgo linux LDFLAGS: -L/usr/lib
+// #cgo LDFLAGS: -lopencv_highgui -lopencv_core -lopencv_video
 // #include "cv.h"
 // #include "highgui.h"
 import "C"
@@ -83,6 +87,7 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 func main() {
 	fmt.Printf("Gasworks neruon.\n")
 
+	// Connect to arduino over serial.
 	c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
 	s, err := goserial.OpenPort(c)
 	if err != nil {
