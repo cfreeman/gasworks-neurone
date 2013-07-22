@@ -85,8 +85,6 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 }
 
 func main() {
-	fmt.Printf("Gasworks neruon.\n")
-
 	// Connect to arduino over serial.
 	c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
 	s, err := goserial.OpenPort(c)
@@ -100,26 +98,33 @@ func main() {
 	// When connecting to an arduino, you need to wait a little while it resets.
 	// time.Sleep(1 * time.Second)
 
-	// prev = cvQueryFrame
-	// while not done.
+	// Original -- 200
+	// Latest -- 139 (+30%)
 
 	camera := C.cvCaptureFromCAM(-1)
+	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 320);
+	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 240);
+
+	// Capture original frame.
 	prev := C.cvCloneImage(C.cvQueryFrame(camera))
+
+	// file := C.CString("a.png")
+	// C.cvSaveImage(file, unsafe.Pointer(prev), nil)
+	// C.free(unsafe.Pointer(file))
 
 	flow := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_32F, 2)
 	prevG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
 	nextG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
+	C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
 
-	for i := 0; i < 500; i++ {
+	for i := 1; i < 500; i++ {
 		C.cvGrabFrame(camera)
-		next := C.cvCloneImage(C.cvQueryFrame(camera))
 
-		// Convert the captured frames to greyscale.
-		C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
+		// Capture the new frame and convert it to grayscale.
+		next := C.cvCloneImage(C.cvQueryFrame(camera))
 		C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
 
 		C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
-
 		delta := float32(calcDeltaEnergy(flow))
 		energy += delta
 		fmt.Printf("energy: %f %f\n", energy, delta)
