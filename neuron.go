@@ -32,8 +32,8 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"github.com/huin/goserial"
-	"log"
+	// "github.com/huin/goserial"
+	// "log"
 	// "time"
 	"io"
 	"math"
@@ -69,28 +69,29 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 		dy += math.Abs(float64(value.val[1]))
 	}
 
+	// average out the magnitude of dx and dy across the whole image.
+	dx = dx / float64(totalPixels)
+	dy = dy / float64(totalPixels)
+
 	// The magnitude of accumulated flow forms our change in energy for the frame.
 	deltaE := math.Sqrt((dx * dx) + (dy * dy))
 
 	// Clamp the energy to start at 0 for 'still' frames with little/no motion.
-	//fmt.Printf("%f, %f: %f\n", dx, dy, deltaE)
-	deltaE = math.Max(0.0, (deltaE - 250000))
+	deltaE = math.Max(0.0, (deltaE - 1.0))
 
 	// Scale the flow to be less than 0.1 for 'active' frames with lots of motion.
-	//fmt.Printf("%f\n", deltaE)
-	deltaE = deltaE / 10000000
-	//fmt.Printf("%f\n", deltaE)
+	deltaE = deltaE / 1000.0
 
 	return deltaE
 }
 
 func main() {
 	// Connect to arduino over serial.
-	c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
-	s, err := goserial.OpenPort(c)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
+	// s, err := goserial.OpenPort(c)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
 	var energy float32
 	energy = 0.0
@@ -102,8 +103,8 @@ func main() {
 	// Latest -- 139 (+30%)
 
 	camera := C.cvCaptureFromCAM(-1)
-	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 320);
-	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 240);
+	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160);
+	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120);
 
 	// Capture original frame.
 	prev := C.cvCloneImage(C.cvQueryFrame(camera))
@@ -128,7 +129,7 @@ func main() {
 		delta := float32(calcDeltaEnergy(flow))
 		energy += delta
 		fmt.Printf("energy: %f %f\n", energy, delta)
-		updateArduinoEnergy(energy, s)
+//		updateArduinoEnergy(energy, s)
 
 		C.cvReleaseImage(&prev)
 		prev = next
