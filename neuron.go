@@ -99,9 +99,6 @@ func main() {
 	// When connecting to an arduino, you need to wait a little while it resets.
 	// time.Sleep(1 * time.Second)
 
-	// Original -- 200
-	// Latest -- 139 (+30%)
-
 	camera := C.cvCaptureFromCAM(-1)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160);
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120);
@@ -131,6 +128,7 @@ func main() {
 		fmt.Printf("energy: %f %f\n", energy, delta)
 //		updateArduinoEnergy(energy, s)
 
+		// BUG! Not rotating greyscale images correctly.
 		C.cvReleaseImage(&prev)
 		prev = next
 	}
