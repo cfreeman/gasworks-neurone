@@ -75,6 +75,7 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 
 	// The magnitude of accumulated flow forms our change in energy for the frame.
 	deltaE := math.Sqrt((dx * dx) + (dy * dy))
+	fmt.Printf("flow %f \n", deltaE)
 
 	// Clamp the energy to start at 0 for 'still' frames with little/no motion.
 	deltaE = math.Max(0.0, (deltaE - 1.0))
@@ -86,7 +87,7 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 }
 
 func main() {
-	// Connect to arduino over serial.
+	// Connect to the arduino over serial.
 	// c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
 	// s, err := goserial.OpenPort(c)
 	// if err != nil {
@@ -100,8 +101,8 @@ func main() {
 	// time.Sleep(1 * time.Second)
 
 	camera := C.cvCaptureFromCAM(-1)
-	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160);
-	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120);
+	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160)
+	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120)
 
 	// Capture original frame.
 	prev := C.cvCloneImage(C.cvQueryFrame(camera))
@@ -120,15 +121,15 @@ func main() {
 
 		// Capture the new frame and convert it to grayscale.
 		next := C.cvCloneImage(C.cvQueryFrame(camera))
+		C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
 		C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
 
 		C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
 		delta := float32(calcDeltaEnergy(flow))
 		energy += delta
 		fmt.Printf("energy: %f %f\n", energy, delta)
-//		updateArduinoEnergy(energy, s)
+		//		updateArduinoEnergy(energy, s)
 
-		// BUG! Not rotating greyscale images correctly.
 		C.cvReleaseImage(&prev)
 		prev = next
 	}
@@ -139,13 +140,4 @@ func main() {
 	C.cvReleaseImage(&prevG)
 	C.cvReleaseImage(&flow)
 	C.cvReleaseCapture(&camera)
-
-	// Make sure the port stays open, otherwise the arduino will reset as soon as it discconects.
-	// file := C.CString("a.png")
-	// C.cvSaveImage(file, unsafe.Pointer(prev), nil)
-	// C.free(unsafe.Pointer(file))
-
-	// file = C.CString("b.png")
-	// C.cvSaveImage(file, unsafe.Pointer(next), nil)
-	// C.free(unsafe.Pointer(file))
 }
