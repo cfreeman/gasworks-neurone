@@ -28,11 +28,11 @@ package main
 // #include "highgui.h"
 import "C"
 
- import (	
+import (
 	"fmt"
 	"math"
 	"unsafe"
-	"runtime"
+	//"runtime"
 )
 
 func calcDeltaEnergy(flow *C.IplImage) float64 {
@@ -64,9 +64,7 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 	return deltaE
 }
 
-func DendriteCam(delta chan float32) {
-	runtime.LockOSThread()
-
+func DendriteCam(delta_e chan float32) {
 	camera := C.cvCaptureFromCAM(-1)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120)
@@ -92,10 +90,7 @@ func DendriteCam(delta chan float32) {
 		C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
 
 		C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
-		delta <- float32(calcDeltaEnergy(flow))
-		//energy += delta
-		//fmt.Printf("energy: %f \n", delta)
-		//		updateArduinoEnergy(energy, s)
+		delta_e <- float32(calcDeltaEnergy(flow))
 
 		C.cvReleaseImage(&prev)
 		prev = next
