@@ -32,6 +32,7 @@ import "C"
 	"fmt"
 	"math"
 	"unsafe"
+	"runtime"
 )
 
 func calcDeltaEnergy(flow *C.IplImage) float64 {
@@ -63,7 +64,9 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 	return deltaE
 }
 
-func DendriteCam() {
+func DendriteCam(delta chan float32) {
+	runtime.LockOSThread()
+
 	camera := C.cvCaptureFromCAM(-1)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120)
@@ -89,9 +92,9 @@ func DendriteCam() {
 		C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
 
 		C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
-		delta := float32(calcDeltaEnergy(flow))
+		delta <- float32(calcDeltaEnergy(flow))
 		//energy += delta
-		fmt.Printf("energy: %f \n", delta)
+		//fmt.Printf("energy: %f \n", delta)
 		//		updateArduinoEnergy(energy, s)
 
 		C.cvReleaseImage(&prev)

@@ -45,13 +45,24 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
 	return nil
 }
 
+func blah(delta_e chan float32) {
+	var energy float32
+	energy = 0.0
+
+	for i := 0; i < 500; i++ {
+		de := <- delta_e
+		energy += de
+		fmt.Printf("Energy level %f %f\n", energy, de)
+	}
+}
+
 
 // We have two different kinds of dentrite. The webcam/optical flow and incoming from
 // other neurons. 
 // 
 // We 
 func main() {
-	fmt.Printf("Gasworks neuron")
+	fmt.Printf("Gasworks neuron\n")
 	// Connect to the arduino over serial.
 	// c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
 	// s, err := goserial.OpenPort(c)
@@ -59,8 +70,13 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
-	//var energy float32
-	//energy = 0.0
+	delta_e := make(chan float32)	
+
+	
+	go DendriteCam(delta_e)
+	blah(delta_e)
+
+	
 
 	// When connecting to an arduino, you need to wait a little while it resets.
 	// time.Sleep(1 * time.Second)
