@@ -32,7 +32,6 @@ import (
 	"fmt"
 	"math"
 	"unsafe"
-	//"runtime"
 )
 
 func calcDeltaEnergy(flow *C.IplImage) float64 {

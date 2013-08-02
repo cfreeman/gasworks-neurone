@@ -63,6 +63,15 @@ func Axon(delta_e chan float32) {
 		de := <-delta_e
 		energy += de
 
+		// Neuron has reached threshold. Fire axon.
+		if energy > 1.0 {
+
+			// Feed into the dendrites of adjacent neurons.
+			//req, err := http.NewRequest("GET", "http://neuronip:8080/?e=%d", nil)
+
+			energy = 0.0
+		}
+
 		// updateArduinoEnergy(energy, s)
 		fmt.Printf("Energy level %f %f\n", energy, de)
 	}

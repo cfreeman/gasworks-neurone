@@ -21,13 +21,18 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Hi there, I love %s!", r.URL.Path[1:])
-}
+func DendriteWeb(delta_e chan float32) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		i, err := strconv.ParseInt(r.FormValue("e"), 10, 64)
 
-func DendriteWeb() {
-	http.HandleFunc("/", handler)
+		if err == nil {
+			fmt.Printf("Adjacent neuron fired %d! ***** \n", i)
+			delta_e <- float32(i) / float32(1000.0)
+		}
+	})
+
 	http.ListenAndServe(":8080", nil)
 }

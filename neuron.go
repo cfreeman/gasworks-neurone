@@ -31,5 +31,6 @@ func main() {
 	delta_e := make(chan float32)
 
 	go Axon(delta_e)
+	go DendriteWeb(delta_e)
 	DendriteCam(delta_e)
 }
