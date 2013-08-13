@@ -23,14 +23,20 @@ import (
 	"os"
 )
 
-type Configuration struct {
-	OpticalFlowScale	float64
-	MovementThreshold	float64
+type AdjacentNeuron struct {
+	Transfer float64
+	IP       string
 }
 
-func parseConfiguration(configFile string) (configuration Configuration, err error) {
+type Configuration struct {
+	OpticalFlowScale  float64
+	MovementThreshold float64
+	AdjacentNeurons   []AdjacentNeuron
+}
+
+func ParseConfiguration(configFile string) (configuration Configuration, err error) {
 	// Create a default configuration.
-	config := Configuration{1000.0, 1.0}
+	config := Configuration{1000.0, 1.0, []AdjacentNeuron{}}
 
 	// Open the configuration file.
 	file, err := os.Open(configFile)
@@ -38,7 +44,7 @@ func parseConfiguration(configFile string) (configuration Configuration, err err
 		return config, err
 	}
 
-	// Parse the JSON in the configuration file.
+	// Parse JSON in the configuration file.
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&config)
 	if err != nil {
