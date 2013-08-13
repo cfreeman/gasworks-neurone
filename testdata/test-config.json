@@ -2,5 +2,6 @@
 	"OpticalFlowScale": 0.23,
 	"MovementThreshold": 0.10,
 	"ListenAddress": "10.1.1.1:8080",
-	"AdjacentNeurons": [{"Address": "http://10.1.1.5:8080/", "Transfer": 0.8}, {"Address": "http://10.1.1.4:8080/", "Transfer": 0.2}]
+	"AdjacentNeurons": [{"Address": "http://10.1.1.5:8080/", "Transfer": 0.8},
+						{"Address": "http://10.1.1.4:8080/", "Transfer": 0.2}]
 }

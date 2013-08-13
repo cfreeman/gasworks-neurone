@@ -22,11 +22,10 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	"net/http"
-	// "github.com/huin/goserial"
-	// "log"
-	// "time"
+	"github.com/huin/goserial"
 	"io"
+	"net/http"
+	"time"
 )
 
 // updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
@@ -48,14 +47,11 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
 
 func Axon(delta_e chan float32, config Configuration) {
 	// Connect to the arduino over serial.
-	// c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
-	// s, err := goserial.OpenPort(c)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
+	s, _ := goserial.OpenPort(c)
 
 	// When connecting to an arduino, you need to wait a little while it resets.
-	// time.Sleep(1 * time.Second)
+	time.Sleep(1 * time.Second)
 
 	var energy float32
 	energy = 0.0
@@ -66,20 +62,26 @@ func Axon(delta_e chan float32, config Configuration) {
 
 		// Neuron has reached threshold. Fire axon.
 		if energy > 1.0 {
-			// Feed into the dendrites of adjacent neurons.
+
+			// Axon fires into the web dendrites of adjacent neurons.
 			for _, n := range config.AdjacentNeurons {
 				buf := new(bytes.Buffer)
 				fmt.Fprint(buf, "%s?e=%f", n.Address, n.Transfer)
 
 				address := buf.String()
-				fmt.Printf("*** " + address)
+				fmt.Printf("Hitting " + address)
 				http.NewRequest("GET", address, nil)
 			}
 
+			// Reset energy level of this neuron.
 			energy = 0.0
 		}
 
-		// updateArduinoEnergy(energy, s)
+		// If we have a valid serial connection to an arduino, update the energy level.
+		if s != nil {
+			updateArduinoEnergy(energy, s)
+		}
+
 		fmt.Printf("Energy level %f %f\n", energy, de)
 	}
 }
