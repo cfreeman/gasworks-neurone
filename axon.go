@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
+	"net/http"
 	// "github.com/huin/goserial"
 	// "log"
 	// "time"
@@ -45,7 +46,7 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
 	return nil
 }
 
-func Axon(delta_e chan float32) {
+func Axon(delta_e chan float32, config Configuration) {
 	// Connect to the arduino over serial.
 	// c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
 	// s, err := goserial.OpenPort(c)
@@ -65,9 +66,15 @@ func Axon(delta_e chan float32) {
 
 		// Neuron has reached threshold. Fire axon.
 		if energy > 1.0 {
-
 			// Feed into the dendrites of adjacent neurons.
-			//req, err := http.NewRequest("GET", "http://neuronip:8080/?e=%d", nil)
+			for _, n := range config.AdjacentNeurons {
+				buf := new(bytes.Buffer)
+				fmt.Fprint(buf, "%s?e=%f", n.Address, n.Transfer)
+
+				address := buf.String()
+				fmt.Printf("*** " + address)
+				http.NewRequest("GET", address, nil)
+			}
 
 			energy = 0.0
 		}

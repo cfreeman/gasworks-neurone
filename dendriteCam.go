@@ -34,7 +34,7 @@ import (
 	"unsafe"
 )
 
-func calcDeltaEnergy(flow *C.IplImage) float64 {
+func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 	var i C.int
 	var dx, dy float64
 
@@ -55,15 +55,15 @@ func calcDeltaEnergy(flow *C.IplImage) float64 {
 	fmt.Printf("flow %f \n", deltaE)
 
 	// Clamp the energy to start at 0 for 'still' frames with little/no motion.
-	deltaE = math.Max(0.0, (deltaE - 1.0))
+	deltaE = math.Max(0.0, (deltaE - config.MovementThreshold))
 
 	// Scale the flow to be less than 0.1 for 'active' frames with lots of motion.
-	deltaE = deltaE / 1000.0
+	deltaE = deltaE / config.OpticalFlowScale
 
 	return deltaE
 }
 
-func DendriteCam(delta_e chan float32) {
+func DendriteCam(delta_e chan float32, config Configuration) {
 	camera := C.cvCaptureFromCAM(-1)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120)
@@ -89,7 +89,7 @@ func DendriteCam(delta_e chan float32) {
 		C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
 
 		C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
-		delta_e <- float32(calcDeltaEnergy(flow))
+		delta_e <- float32(calcDeltaEnergy(flow, &config))
 
 		C.cvReleaseImage(&prev)
 		prev = next

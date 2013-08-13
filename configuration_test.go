@@ -34,6 +34,10 @@ func TestMissingConfiguration(t *testing.T) {
 		t.Errorf("incorrect default movement threshold.")
 	}
 
+	if config.ListenAddress != ":8080" {
+		t.Errorf("incorrect default listen address")
+	}
+
 	if len(config.AdjacentNeurons) != 0 {
 		t.Errorf("incorrect default list of AdjacentNeurons")
 	}
@@ -53,15 +57,19 @@ func TestValidConfiguration(t *testing.T) {
 		t.Errorf("parsed incorrect value for movement threshold.")
 	}
 
+	if config.ListenAddress != "10.1.1.1:8080" {
+		t.Errorf("parsed incorrect listen address")
+	}
+
 	if len(config.AdjacentNeurons) != 2 {
 		t.Errorf("Did not parse enough adjacent neurons from the configuration")
 	}
 
-	if config.AdjacentNeurons[0].IP != "10.1.1.5" && config.AdjacentNeurons[0].Transfer != 0.8 {
+	if config.AdjacentNeurons[0].Address != "http://10.1.1.5:8080/" && config.AdjacentNeurons[0].Transfer != 0.8 {
 		t.Errorf("Did not correctly parse the first transfer neuron")
 	}
 
-	if config.AdjacentNeurons[1].IP != "10.1.1.4" && config.AdjacentNeurons[1].Transfer != 0.2 {
+	if config.AdjacentNeurons[1].Address != "http://10.1.1.4:8080/" && config.AdjacentNeurons[1].Transfer != 0.2 {
 		t.Errorf("Did not correctly parse the first transfer neuron")
 	}
 }

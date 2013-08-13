@@ -24,15 +24,15 @@ import (
 	"strconv"
 )
 
-func DendriteWeb(delta_e chan float32) {
+func DendriteWeb(delta_e chan float32, config Configuration) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		i, err := strconv.ParseInt(r.FormValue("e"), 10, 64)
+		i, err := strconv.ParseFloat(r.FormValue("e"), 32)
 
 		if err == nil {
 			fmt.Printf("Adjacent neuron fired %d! ***** \n", i)
-			delta_e <- float32(i) / float32(1000.0)
+			delta_e <- float32(i)
 		}
 	})
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(config.ListenAddress, nil)
 }

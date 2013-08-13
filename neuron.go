@@ -23,14 +23,15 @@ import (
 )
 
 // We have two different kinds of dendrite. One on a webcam, that increases the energy of the neuron
-// when motion is detected in the webcam. And another dendrite that listens for when other neurons fire.
+// when motion is detected in the webcam and another dendrite that listens for when other neurons fire.
 //
-// The webcam/optical flow and incoming from other neurons.
+// We have one axon which transmits energy to adjacent neurons.
 func main() {
 	fmt.Printf("Gasworks neuron\n")
+	configuration, _ := ParseConfiguration("gasworks.json")
 	delta_e := make(chan float32)
 
-	go Axon(delta_e)
-	go DendriteWeb(delta_e)
-	DendriteCam(delta_e)
+	go Axon(delta_e, configuration)
+	go DendriteWeb(delta_e, configuration)
+	DendriteCam(delta_e, configuration)
 }
