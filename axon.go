@@ -26,8 +26,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 )
 
 // updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
@@ -56,7 +56,7 @@ func findArduino() string {
 	// Look for the arduino device
 	for _, f := range contents {
 		if strings.Contains(f.Name(), "tty.usbserial") ||
-		   strings.Contains(f.Name(), "ttyUSB") {
+			strings.Contains(f.Name(), "ttyUSB") {
 			return "/dev/" + f.Name()
 		}
 	}
