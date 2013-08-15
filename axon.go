@@ -73,6 +73,7 @@ func Axon(delta_e chan float32, config Configuration) {
 	// When connecting to an older revision arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
 
+	// The energy level of the neuron.
 	var energy float32 = 0.0
 
 	for i := 0; i < 500; i++ {
@@ -88,8 +89,8 @@ func Axon(delta_e chan float32, config Configuration) {
 				fmt.Fprint(buf, "%s?e=%f", n.Address, n.Transfer)
 
 				address := buf.String()
-				fmt.Printf("Hitting " + address)
 				http.NewRequest("GET", address, nil)
+				fmt.Printf("Firing into " + address)
 			}
 
 			// Reset energy level of this neuron.
