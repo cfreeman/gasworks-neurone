@@ -24,8 +24,10 @@ import (
 	"fmt"
 	"github.com/huin/goserial"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
+	"strings"
 )
 
 // updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
@@ -45,16 +47,33 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
 	return nil
 }
 
+// findArduino looks for the file that represents the arduino serial connection. Returns the fully qualified path
+// to the device if we are able to find a likely candidate for an arduino, otherwise an empty string if unable to
+// find an arduino device.
+func findArduino() string {
+	contents, _ := ioutil.ReadDir("/dev")
+
+	// Look for the arduino device
+	for _, f := range contents {
+		if strings.Contains(f.Name(), "tty.usbserial") ||
+		   strings.Contains(f.Name(), "ttyUSB") {
+			return "/dev/" + f.Name()
+		}
+	}
+
+	// Have not been able to find the device.
+	return ""
+}
+
 func Axon(delta_e chan float32, config Configuration) {
-	// Connect to the arduino over serial.
-	c := &goserial.Config{Name: "/dev/tty.usbserial-A1017HU2", Baud: 9600}
+	// Find the device that represents the arduino serial connection.
+	c := &goserial.Config{Name: findArduino(), Baud: 9600}
 	s, _ := goserial.OpenPort(c)
 
-	// When connecting to an arduino, you need to wait a little while it resets.
+	// When connecting to an older revision arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	var energy float32
-	energy = 0.0
+	var energy float32 = 0.0
 
 	for i := 0; i < 500; i++ {
 		de := <-delta_e
