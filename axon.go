@@ -86,11 +86,11 @@ func Axon(delta_e chan float32, config Configuration) {
 			// Axon fires into the web dendrites of adjacent neurons.
 			for _, n := range config.AdjacentNeurons {
 				buf := new(bytes.Buffer)
-				fmt.Fprint(buf, "%s?e=%f", n.Address, n.Transfer)
+				fmt.Fprintf(buf, "%s?e=%f", n.Address, n.Transfer)
 
 				address := buf.String()
-				http.NewRequest("GET", address, nil)
-				fmt.Printf("Firing into " + address)
+				http.Get(address)
+				fmt.Printf("Firing into " + address + "\n")
 			}
 
 			// Reset energy level of this neuron.
