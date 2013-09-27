@@ -89,7 +89,7 @@ func Axon(delta_e chan float32, config Configuration) {
 				fmt.Fprintf(buf, "%s?e=%f", n.Address, n.Transfer)
 
 				address := buf.String()
-				http.Get(address)
+				go http.Get(address)
 				fmt.Printf("Firing into " + address + "\n")
 			}
 
