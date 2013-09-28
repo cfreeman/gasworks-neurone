@@ -84,6 +84,7 @@ func Axon(delta_e chan float32, config Configuration) {
 
 	// The energy level of the neuron.
 	var energy float32 = 0.0
+	var oldEnergy float32 = 0.0
 
 	for i := 0; i < 500; i++ {
 		de := <-delta_e
@@ -104,12 +105,13 @@ func Axon(delta_e chan float32, config Configuration) {
 					fmt.Printf("Firing into " + address + "\n")
 				}
 
-				// Reset energy level of this neuron.
+				// Flash this neuron when it fires.
 				currentState = 1
 				state[currentState].Start = time.Now().UnixNano()
 				energy = -1.0
 			}
 		} else {
+
 			dt := float64(time.Now().UnixNano()-state[currentState].Start) / 1000000000.0
 			energy = float32(dt/state[currentState].Duration) - 1.0
 
@@ -119,9 +121,10 @@ func Axon(delta_e chan float32, config Configuration) {
 		}
 
 		// If we have a valid serial connection to an arduino, update the energy level.
-		if s != nil {
+		if s != nil && oldEnergy != energy {
 			updateArduinoEnergy(energy, s)
 		}
+		oldEnergy = energy
 
 		fmt.Printf("Energy level %f %f\n", energy, de)
 	}
