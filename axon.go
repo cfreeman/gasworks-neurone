@@ -30,6 +30,12 @@ import (
 	"time"
 )
 
+type NeuronState struct {
+	Name     string
+	Duration float64
+	Start    int64
+}
+
 // updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
 // on failure, nil otherwise. Arduino code takes the energy level and turns it into a lighting sequence.
 func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
@@ -66,6 +72,9 @@ func findArduino() string {
 }
 
 func Axon(delta_e chan float32, config Configuration) {
+	state := [2]NeuronState{{"ACCUMULATING", 0, 0}, {"COOLDOWN", 4.0, 0}}
+	currentState := 0
+
 	// Find the device that represents the arduino serial connection.
 	c := &goserial.Config{Name: findArduino(), Baud: 9600}
 	s, _ := goserial.OpenPort(c)
@@ -78,23 +87,35 @@ func Axon(delta_e chan float32, config Configuration) {
 
 	for i := 0; i < 500; i++ {
 		de := <-delta_e
-		energy += de
 
-		// Neuron has reached threshold. Fire axon.
-		if energy > 1.0 {
+		if currentState == 0 {
+			energy += de
 
-			// Axon fires into the web dendrites of adjacent neurons.
-			for _, n := range config.AdjacentNeurons {
-				buf := new(bytes.Buffer)
-				fmt.Fprintf(buf, "%s?e=%f", n.Address, n.Transfer)
+			// Neuron has reached threshold. Fire axon.
+			if energy > 1.0 {
 
-				address := buf.String()
-				go http.Get(address)
-				fmt.Printf("Firing into " + address + "\n")
+				// Axon fires into the web dendrites of adjacent neurons.
+				for _, n := range config.AdjacentNeurons {
+					buf := new(bytes.Buffer)
+					fmt.Fprintf(buf, "%s?e=%f", n.Address, n.Transfer)
+
+					address := buf.String()
+					go http.Get(address)
+					fmt.Printf("Firing into " + address + "\n")
+				}
+
+				// Reset energy level of this neuron.
+				currentState = 1
+				state[currentState].Start = time.Now().UnixNano()
+				energy = -1.0
 			}
+		} else {
+			dt := float64(time.Now().UnixNano()-state[currentState].Start) / 1000000000.0
+			energy = float32(dt/state[currentState].Duration) - 1.0
 
-			// Reset energy level of this neuron.
-			energy = 0.0
+			if dt >= state[currentState].Duration {
+				currentState = 0
+			}
 		}
 
 		// If we have a valid serial connection to an arduino, update the energy level.
