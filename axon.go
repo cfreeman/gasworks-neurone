@@ -86,7 +86,7 @@ func Axon(delta_e chan float32, config Configuration) {
 	var energy float32 = 0.0
 	var oldEnergy float32 = 0.0
 
-	for i := 0; i < 500; i++ {
+	for true {
 		de := <-delta_e
 
 		if currentState == 0 {

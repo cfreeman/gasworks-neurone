@@ -80,7 +80,7 @@ func DendriteCam(delta_e chan float32, config Configuration) {
 	nextG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
 	C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
 
-	for i := 1; i < 500; i++ {
+	for true {
 		C.cvGrabFrame(camera)
 
 		// Capture the new frame and convert it to grayscale.
