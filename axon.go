@@ -30,11 +30,18 @@ import (
 	"time"
 )
 
-type NeuronState struct {
-	Name     string
-	Duration float64
-	Start    int64
+const COOLDOWN_LENGTH = 4.0
+const NANO_TO_SECONDS = 1000000000.0
+
+type Neuron struct {
+	energy   float32
+	deltaE   chan float32
+	duration float64
+	start    int64
+	config   Configuration
 }
+
+type stateFn func(neuron Neuron) (sF stateFn, newNeuron Neuron)
 
 // updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
 // on failure, nil otherwise. Arduino code takes the energy level and turns it into a lighting sequence.
@@ -71,10 +78,51 @@ func findArduino() string {
 	return ""
 }
 
-func Axon(delta_e chan float32, config Configuration) {
-	state := [2]NeuronState{{"ACCUMULATING", 0, 0}, {"COOLDOWN", 4.0, 0}}
-	currentState := 0
+// accumulate pulls energy off the dendrites and accumulates it within the neuron. When the neuron reaches
+// critical it fires into the axon (the web dendrites of adjacent neurons) and enters the cooldown state.
+func accumulate(neuron Neuron) (sF stateFn, newNeuron Neuron) {
+	newEnergy := neuron.energy + <-neuron.deltaE
 
+	// Neuron has reached threshold. Fire axon.
+	if newEnergy > 1.0 {
+		// Axon fires into the web dendrites of adjacent neurons.
+		for _, adjacent := range neuron.config.AdjacentNeurons {
+			buf := new(bytes.Buffer)
+			fmt.Fprintf(buf, "%s?e=%f", adjacent.Address, adjacent.Transfer)
+
+			address := buf.String()
+			go http.Get(address)
+			fmt.Printf("Firing into " + address + "\n")
+		}
+
+		return cooldown, Neuron{-1.0, neuron.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neuron.config}
+	}
+
+	return accumulate, Neuron{newEnergy, neuron.deltaE, 0.0, time.Now().UnixNano(), neuron.config}
+}
+
+// cooldown allows the neuron to cooldown after firing into the axon, it pauses accumulation by the
+// nominated duration before starting accumulation of energy from the dendrites again.
+func cooldown(neuron Neuron) (sF stateFn, newNeuron Neuron) {
+	<-neuron.deltaE //drain off and ignore changes in energy from the dendrites.
+
+	// Calculate how many seconds have elapsed since this cooldown state started.
+	dt := float64(time.Now().UnixNano()-neuron.start) / NANO_TO_SECONDS
+
+	// LERP neuron energy from -1.0 to 0.0 over the duration of the cooldown.
+	newEnergy := float32(dt/neuron.duration) - 1.0
+
+	// If the time elapsed is longer than the duration of the cooldown, enter the accumulate state.
+	if dt >= neuron.duration {
+		return accumulate, Neuron{newEnergy, neuron.deltaE, 0.0, time.Now().UnixNano(), neuron.config}
+	}
+
+	return cooldown, Neuron{newEnergy, neuron.deltaE, COOLDOWN_LENGTH, neuron.start, neuron.config}
+}
+
+// Axon listens to the dentrites on the deltaE channel, and embodies an artificial neuron. When the energy
+// of the neuron reaches a maximum, it fires into the axon (the web dendites of adjacent neurons).
+func Axon(deltaE chan float32, config Configuration) {
 	// Find the device that represents the arduino serial connection.
 	c := &goserial.Config{Name: findArduino(), Baud: 9600}
 	s, _ := goserial.OpenPort(c)
@@ -82,50 +130,19 @@ func Axon(delta_e chan float32, config Configuration) {
 	// When connecting to an older revision arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	// The energy level of the neuron.
-	var energy float32 = 0.0
-	var oldEnergy float32 = 0.0
+	newNeuron := Neuron{0.0, deltaE, 0.0, time.Now().UnixNano(), config}
+	oldNeuron := newNeuron
+	state := accumulate
 
 	for true {
-		de := <-delta_e
-
-		if currentState == 0 {
-			energy += de
-
-			// Neuron has reached threshold. Fire axon.
-			if energy > 1.0 {
-
-				// Axon fires into the web dendrites of adjacent neurons.
-				for _, n := range config.AdjacentNeurons {
-					buf := new(bytes.Buffer)
-					fmt.Fprintf(buf, "%s?e=%f", n.Address, n.Transfer)
-
-					address := buf.String()
-					go http.Get(address)
-					fmt.Printf("Firing into " + address + "\n")
-				}
-
-				// Flash this neuron when it fires.
-				currentState = 1
-				state[currentState].Start = time.Now().UnixNano()
-				energy = -1.0
-			}
-		} else {
-
-			dt := float64(time.Now().UnixNano()-state[currentState].Start) / 1000000000.0
-			energy = float32(dt/state[currentState].Duration) - 1.0
-
-			if dt >= state[currentState].Duration {
-				currentState = 0
-			}
-		}
+		state, newNeuron = state(oldNeuron)
 
 		// If we have a valid serial connection to an arduino, update the energy level.
-		if s != nil && oldEnergy != energy {
-			updateArduinoEnergy(energy, s)
+		if s != nil && newNeuron.energy != oldNeuron.energy {
+			updateArduinoEnergy(newNeuron.energy, s)
 		}
-		oldEnergy = energy
 
-		fmt.Printf("Energy level %f %f\n", energy, de)
+		fmt.Printf("e: %f\n", newNeuron.energy)
+		oldNeuron = newNeuron
 	}
 }
