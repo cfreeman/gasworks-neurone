@@ -30,6 +30,7 @@ import (
 	"time"
 )
 
+const WARMUP_LENGTH = 20.0
 const COOLDOWN_LENGTH = 4.0
 const NANO_TO_SECONDS = 1000000000.0
 
@@ -78,6 +79,13 @@ func findArduino() string {
 	return ""
 }
 
+// warmup puts the neuron through a non-interactive animated sequence before entering the animated
+// mode.
+func warmup(neuron Neuron) (sF stateFn, newNeuron Neuron) {
+	// The warmup animation and cooldown animation are the same, just over different durations.
+	return cooldown(neuron)
+}
+
 // accumulate pulls energy off the dendrites and accumulates it within the neuron. When the neuron reaches
 // critical it fires into the axon (the web dendrites of adjacent neurons) and enters the cooldown state.
 func accumulate(neuron Neuron) (sF stateFn, newNeuron Neuron) {
@@ -92,7 +100,7 @@ func accumulate(neuron Neuron) (sF stateFn, newNeuron Neuron) {
 
 			address := buf.String()
 			go http.Get(address)
-			fmt.Printf("Firing into " + address + "\n")
+			fmt.Printf("f: " + address + "\n")
 		}
 
 		return cooldown, Neuron{-1.0, neuron.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neuron.config}
@@ -117,7 +125,7 @@ func cooldown(neuron Neuron) (sF stateFn, newNeuron Neuron) {
 		return accumulate, Neuron{newEnergy, neuron.deltaE, 0.0, time.Now().UnixNano(), neuron.config}
 	}
 
-	return cooldown, Neuron{newEnergy, neuron.deltaE, COOLDOWN_LENGTH, neuron.start, neuron.config}
+	return cooldown, Neuron{newEnergy, neuron.deltaE, neuron.duration, neuron.start, neuron.config}
 }
 
 // Axon listens to the dentrites on the deltaE channel, and embodies an artificial neuron. When the energy
@@ -130,14 +138,14 @@ func Axon(deltaE chan float32, config Configuration) {
 	// When connecting to an older revision arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	newNeuron := Neuron{0.0, deltaE, 0.0, time.Now().UnixNano(), config}
+	newNeuron := Neuron{0.0, deltaE, WARMUP_LENGTH, time.Now().UnixNano(), config}
 	oldNeuron := newNeuron
-	state := accumulate
+	state := warmup
 
 	for true {
 		state, newNeuron = state(oldNeuron)
 
-		// If we have a valid serial connection to an arduino, update the energy level.
+		// If we have a valid serial connection to an arduino, update the energy level on the arduino.
 		if s != nil && newNeuron.energy != oldNeuron.energy {
 			updateArduinoEnergy(newNeuron.energy, s)
 		}
