@@ -30,8 +30,10 @@ import (
 	"time"
 )
 
-const WARMUP_LENGTH = 20.0
+const STARTUP_LENGTH = 20.0
+
 const COOLDOWN_LENGTH = 4.0
+
 const NANO_TO_SECONDS = 1000000000.0
 
 type Neuron struct {
@@ -79,9 +81,9 @@ func findArduino() string {
 	return ""
 }
 
-// warmup puts the neuron through a non-interactive animated sequence before entering the animated
+// startup puts the neuron through a non-interactive animated sequence before entering the animated
 // mode.
-func warmup(neuron Neuron) (sF stateFn, newNeuron Neuron) {
+func startup(neuron Neuron) (sF stateFn, newNeuron Neuron) {
 	// The warmup animation and cooldown animation are the same, just over different durations.
 	return cooldown(neuron)
 }
@@ -100,7 +102,7 @@ func accumulate(neuron Neuron) (sF stateFn, newNeuron Neuron) {
 
 			address := buf.String()
 			go http.Get(address)
-			fmt.Printf("f: " + address + "\n")
+			fmt.Printf("INFO: a[" + address + "]\n")
 		}
 
 		return cooldown, Neuron{-1.0, neuron.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neuron.config}
@@ -112,7 +114,11 @@ func accumulate(neuron Neuron) (sF stateFn, newNeuron Neuron) {
 // cooldown allows the neuron to cooldown after firing into the axon, it pauses accumulation by the
 // nominated duration before starting accumulation of energy from the dendrites again.
 func cooldown(neuron Neuron) (sF stateFn, newNeuron Neuron) {
-	<-neuron.deltaE //drain off and ignore changes in energy from the dendrites.
+	// Drain off and ignore changes in energy from the dendrites.
+	select {
+	case <-neuron.deltaE:
+	case <-time.After(250 * time.Millisecond):
+	}
 
 	// Calculate how many seconds have elapsed since this cooldown state started.
 	dt := float64(time.Now().UnixNano()-neuron.start) / NANO_TO_SECONDS
@@ -138,9 +144,9 @@ func Axon(deltaE chan float32, config Configuration) {
 	// When connecting to an older revision arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	newNeuron := Neuron{0.0, deltaE, WARMUP_LENGTH, time.Now().UnixNano(), config}
+	newNeuron := Neuron{0.0, deltaE, STARTUP_LENGTH, time.Now().UnixNano(), config}
 	oldNeuron := newNeuron
-	state := warmup
+	state := startup
 
 	for true {
 		state, newNeuron = state(oldNeuron)
@@ -150,7 +156,7 @@ func Axon(deltaE chan float32, config Configuration) {
 			updateArduinoEnergy(newNeuron.energy, s)
 		}
 
-		fmt.Printf("e: %f\n", newNeuron.energy)
+		fmt.Printf("INFO: e[%f]\n", newNeuron.energy)
 		oldNeuron = newNeuron
 	}
 }

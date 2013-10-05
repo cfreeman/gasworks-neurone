@@ -52,7 +52,7 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 
 	// The magnitude of accumulated flow forms our change in energy for the frame.
 	deltaE := math.Sqrt((dx * dx) + (dy * dy))
-	fmt.Printf("flow %f \n", deltaE)
+	fmt.Printf("INFO: f[%f] \n", deltaE)
 
 	// Clamp the energy to start at 0 for 'still' frames with little/no motion.
 	deltaE = math.Max(0.0, (deltaE - config.MovementThreshold))
@@ -65,6 +65,13 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 
 func DendriteCam(delta_e chan float32, config Configuration) {
 	camera := C.cvCaptureFromCAM(-1)
+
+	// Shutdown dendrite if no camera detected.
+	if camera == nil {
+		fmt.Printf("ERROR: No camera detected. Shutting down DendriteCam\n")
+		return
+	}
+
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120)
 
