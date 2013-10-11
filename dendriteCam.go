@@ -29,7 +29,7 @@ package main
 import "C"
 
 import (
-	"fmt"
+	"log"
 	"math"
 	"unsafe"
 )
@@ -52,7 +52,7 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 
 	// The magnitude of accumulated flow forms our change in energy for the frame.
 	deltaE := math.Sqrt((dx * dx) + (dy * dy))
-	fmt.Printf("INFO: f[%f] \n", deltaE)
+	log.Printf("INFO: f[%f] \n", deltaE)
 
 	// Clamp the energy to start at 0 for 'still' frames with little/no motion.
 	deltaE = math.Max(0.0, (deltaE - config.MovementThreshold))
@@ -68,7 +68,7 @@ func DendriteCam(delta_e chan float32, config Configuration) {
 
 	// Shutdown dendrite if no camera detected.
 	if camera == nil {
-		fmt.Printf("ERROR: No camera detected. Shutting down DendriteCam\n")
+		log.Fatalf("ERROR: No camera detected. Shutting down DendriteCam\n")
 		return
 	}
 

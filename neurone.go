@@ -19,7 +19,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"time"
 )
 
@@ -28,7 +28,7 @@ import (
 //
 // We have one axon which transmits energy to adjacent neurones.
 func main() {
-	fmt.Printf("Gasworks neurone\n")
+	log.Printf("Gasworks neurone\n")
 	configuration, _ := ParseConfiguration("gasworks.json")
 	delta_e := make(chan float32)
 

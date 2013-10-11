@@ -25,6 +25,7 @@ import (
 	"github.com/huin/goserial"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -102,7 +103,7 @@ func accumulate(neurone Neurone) (sF stateFn, newNeurone Neurone) {
 
 			address := buf.String()
 			go http.Get(address)
-			fmt.Printf("INFO: a[" + address + "]\n")
+			log.Printf("INFO: a[" + address + "]\n")
 		}
 
 		return cooldown, Neurone{-1.0, neurone.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neurone.config}
@@ -156,7 +157,7 @@ func Axon(deltaE chan float32, config Configuration) {
 			updateArduinoEnergy(newNeurone.energy, s)
 		}
 
-		fmt.Printf("INFO: e[%f]\n", newNeurone.energy)
+		log.Printf("INFO: e[%f]\n", newNeurone.energy)
 		oldNeurone = newNeurone
 	}
 }
