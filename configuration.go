@@ -23,7 +23,7 @@ import (
 	"os"
 )
 
-type AdjacentNeuron struct {
+type AdjacentNeurone struct {
 	Transfer float64
 	Address  string
 }
@@ -32,12 +32,13 @@ type Configuration struct {
 	OpticalFlowScale  float64
 	MovementThreshold float64
 	ListenAddress     string
-	AdjacentNeurons   []AdjacentNeuron
+	MasterAddress     string
+	AdjacentNeurones  []AdjacentNeurone
 }
 
 func ParseConfiguration(configFile string) (configuration Configuration, err error) {
 	// Create a default configuration.
-	config := Configuration{1000.0, 1.0, ":8080", []AdjacentNeuron{}}
+	config := Configuration{1000.0, 1.0, ":8080", "", []AdjacentNeurone{}}
 
 	// Open the configuration file.
 	file, err := os.Open(configFile)

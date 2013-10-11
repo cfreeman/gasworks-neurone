@@ -23,12 +23,12 @@ import (
 	"time"
 )
 
-// We have two different kinds of dendrite. One on a webcam, that increases the energy of the neuron
-// when motion is detected in the webcam and another dendrite that listens for when other neurons fire.
+// We have two different kinds of dendrite. One on a webcam, that increases the energy of the neurone
+// when motion is detected in the webcam and another dendrite that listens for when other neurones fire.
 //
-// We have one axon which transmits energy to adjacent neurons.
+// We have one axon which transmits energy to adjacent neurones.
 func main() {
-	fmt.Printf("Gasworks neuron\n")
+	fmt.Printf("Gasworks neurone\n")
 	configuration, _ := ParseConfiguration("gasworks.json")
 	delta_e := make(chan float32)
 

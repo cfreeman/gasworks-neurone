@@ -29,7 +29,7 @@ func DendriteWeb(delta_e chan float32, config Configuration) {
 		i, err := strconv.ParseFloat(r.FormValue("e"), 32)
 
 		if err == nil {
-			fmt.Printf("Adjacent neuron fired %d! ***** \n", i)
+			fmt.Printf("Adjacent neurone fired %d! ***** \n", i)
 			delta_e <- float32(i)
 		}
 	})

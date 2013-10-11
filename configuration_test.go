@@ -38,7 +38,7 @@ func TestMissingConfiguration(t *testing.T) {
 		t.Errorf("incorrect default listen address")
 	}
 
-	if len(config.AdjacentNeurons) != 0 {
+	if len(config.AdjacentNeurones) != 0 {
 		t.Errorf("incorrect default list of AdjacentNeurons")
 	}
 }
@@ -61,15 +61,15 @@ func TestValidConfiguration(t *testing.T) {
 		t.Errorf("parsed incorrect listen address")
 	}
 
-	if len(config.AdjacentNeurons) != 2 {
+	if len(config.AdjacentNeurones) != 2 {
 		t.Errorf("Did not parse enough adjacent neurons from the configuration")
 	}
 
-	if config.AdjacentNeurons[0].Address != "http://10.1.1.5:8080/" && config.AdjacentNeurons[0].Transfer != 0.8 {
+	if config.AdjacentNeurones[0].Address != "http://10.1.1.5:8080/" && config.AdjacentNeurones[0].Transfer != 0.8 {
 		t.Errorf("Did not correctly parse the first transfer neuron")
 	}
 
-	if config.AdjacentNeurons[1].Address != "http://10.1.1.4:8080/" && config.AdjacentNeurons[1].Transfer != 0.2 {
+	if config.AdjacentNeurones[1].Address != "http://10.1.1.4:8080/" && config.AdjacentNeurones[1].Transfer != 0.2 {
 		t.Errorf("Did not correctly parse the first transfer neuron")
 	}
 }
