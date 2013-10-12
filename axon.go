@@ -30,7 +30,9 @@ import (
 	"time"
 )
 
-const WAIT_LENGTH = 5.0
+const WAIT_LENGTH = 30.0
+
+const WAIT_TIMEOUT = 400.0
 
 const STARTUP_LENGTH = 20.0
 
@@ -97,7 +99,7 @@ func wait(neurone Neurone) (sF stateFn, newNeurone Neurone) {
 		}
 
 		if dt >= neurone.duration {
-			for _, adjacent := range neurone.config.AdjacentNeurones {
+			for _, adjacent := range neurone.config.AllNeurones {
 				buf := new(bytes.Buffer)
 				fmt.Fprintf(buf, "%s?e=%f", adjacent.Address, adjacent.Transfer)
 
@@ -111,8 +113,13 @@ func wait(neurone Neurone) (sF stateFn, newNeurone Neurone) {
 	} else {
 		// Neurone is not the master, wait to be notified by the master before startup.
 		de := <-neurone.deltaE
-		if de < 0 {
+		if de < -0.5 {
 			return startup, Neurone{0.0, neurone.deltaE, STARTUP_LENGTH, time.Now().UnixNano(), neurone.config}
+		} else if dt >= WAIT_TIMEOUT {
+
+			// If for some reason we don't get notified by the master neurone to enter the animation, just jump
+			// straight to interactive mode.
+			return accumulate, Neurone{0.0, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
 		}
 	}
 

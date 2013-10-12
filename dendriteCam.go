@@ -68,7 +68,7 @@ func DendriteCam(delta_e chan float32, config Configuration) {
 
 	// Shutdown dendrite if no camera detected.
 	if camera == nil {
-		fmt.Printf("ERROR: No camera detected. Shutting down DendriteCam\n")
+		fmt.Printf("WARNING: No camera detected. Shutting down DendriteCam\n")
 		return
 	}
 
