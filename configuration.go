@@ -32,13 +32,15 @@ type Configuration struct {
 	OpticalFlowScale  float64
 	MovementThreshold float64
 	ListenAddress     string
-	MasterAddress     string
 	AdjacentNeurones  []AdjacentNeurone
+
+	MasterNeurone bool
+	AllNeurones   []AdjacentNeurone
 }
 
 func ParseConfiguration(configFile string) (configuration Configuration, err error) {
 	// Create a default configuration.
-	config := Configuration{1000.0, 1.0, ":8080", "", []AdjacentNeurone{}}
+	config := Configuration{1000.0, 1.0, ":8080", []AdjacentNeurone{}, false, []AdjacentNeurone{}}
 
 	// Open the configuration file.
 	file, err := os.Open(configFile)

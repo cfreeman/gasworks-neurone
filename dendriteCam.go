@@ -29,6 +29,7 @@ package main
 import "C"
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"unsafe"
@@ -64,20 +65,24 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 }
 
 func DendriteCam(delta_e chan float32, config Configuration) {
+	fmt.Printf("CAM!\n")
 	camera := C.cvCaptureFromCAM(-1)
 
 	// Shutdown dendrite if no camera detected.
 	if camera == nil {
-		log.Fatalf("ERROR: No camera detected. Shutting down DendriteCam\n")
+		fmt.Printf("CAM!X\n")
+		//log.Fatalf("ERROR: No camera detected. Shutting down DendriteCam\n")
 		return
 	}
 
+	fmt.Printf("CAM!A\n")
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120)
 
 	// Capture original frame.
 	prev := C.cvCloneImage(C.cvQueryFrame(camera))
 
+	fmt.Printf("CAM!B\n")
 	// file := C.CString("a.png")
 	// C.cvSaveImage(file, unsafe.Pointer(prev), nil)
 	// C.free(unsafe.Pointer(file))
@@ -87,6 +92,7 @@ func DendriteCam(delta_e chan float32, config Configuration) {
 	nextG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
 	C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
 
+	fmt.Printf("CAM!C\n")
 	for true {
 		C.cvGrabFrame(camera)
 

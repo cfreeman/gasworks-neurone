@@ -31,6 +31,8 @@ import (
 	"time"
 )
 
+const WAIT_LENGTH = 5.0
+
 const STARTUP_LENGTH = 20.0
 
 const COOLDOWN_LENGTH = 4.0
@@ -82,9 +84,46 @@ func findArduino() string {
 	return ""
 }
 
+// wait puts the neurone in a holding state untill all the raspberry pi's have started up. Then
+// puts all the neurones through a non-interactive animated sequence.
+func wait(neurone Neurone) (sF stateFn, newNeurone Neurone) {
+	// Calculate how many seconds have elapsed since this cooldown state started.
+	dt := float64(time.Now().UnixNano()-neurone.start) / NANO_TO_SECONDS
+
+	if neurone.config.MasterNeurone {
+		// Drain off an ignore energy from the dendrites.
+		select {
+		case <-neurone.deltaE:
+		case <-time.After(5 * time.Millisecond):
+		}
+
+		if dt >= neurone.duration {
+			for _, adjacent := range neurone.config.AdjacentNeurones {
+				buf := new(bytes.Buffer)
+				fmt.Fprintf(buf, "%s?e=%f", adjacent.Address, adjacent.Transfer)
+
+				address := buf.String()
+				go http.Get(address)
+				log.Printf("INFO: S[" + address + "]\n")
+			}
+
+			return startup, Neurone{0.0, neurone.deltaE, STARTUP_LENGTH, time.Now().UnixNano(), neurone.config}
+		}
+	} else {
+		// Neurone is not the master, wait to be notified by the master before startup.
+		de := <-neurone.deltaE
+		if de < 0 {
+			return startup, Neurone{0.0, neurone.deltaE, STARTUP_LENGTH, time.Now().UnixNano(), neurone.config}
+		}
+	}
+
+	return wait, Neurone{-2.0, neurone.deltaE, neurone.duration, neurone.start, neurone.config}
+}
+
 // startup puts the neurone through a non-interactive animated sequence before entering the animated
 // mode.
 func startup(neurone Neurone) (sF stateFn, newNeurone Neurone) {
+
 	// The warmup animation and cooldown animation are the same, just over different durations.
 	return cooldown(neurone)
 }
@@ -145,7 +184,7 @@ func Axon(deltaE chan float32, config Configuration) {
 	// When connecting to an older revision arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	newNeurone := Neurone{0.0, deltaE, STARTUP_LENGTH, time.Now().UnixNano(), config}
+	newNeurone := Neurone{-2.0, deltaE, WAIT_LENGTH, time.Now().UnixNano(), config}
 	oldNeurone := newNeurone
 	state := startup
 

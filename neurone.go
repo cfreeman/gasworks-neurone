@@ -20,7 +20,7 @@ package main
 
 import (
 	"log"
-	"time"
+	//"time"
 )
 
 // We have two different kinds of dendrite. One on a webcam, that increases the energy of the neurone
@@ -34,10 +34,11 @@ func main() {
 
 	go Axon(delta_e, configuration)
 
-	go DendriteWeb(delta_e, configuration)
+	//go DendriteWeb(delta_e, configuration)
+	log.Printf("Starting Dendrite\n")
 	DendriteCam(delta_e, configuration)
 
-	for true {
-		time.Sleep(1 * time.Second)
-	}
+	// for true {
+	// 	time.Sleep(1 * time.Second)
+	// }
 }
