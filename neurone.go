@@ -19,8 +19,8 @@
 package main
 
 import (
-	"log"
-	//"time"
+	"fmt"
+	"time"
 )
 
 // We have two different kinds of dendrite. One on a webcam, that increases the energy of the neurone
@@ -28,17 +28,17 @@ import (
 //
 // We have one axon which transmits energy to adjacent neurones.
 func main() {
-	log.Printf("Gasworks neurone\n")
+	fmt.Printf("Gasworks neurone\n")
 	configuration, _ := ParseConfiguration("gasworks.json")
 	delta_e := make(chan float32)
 
 	go Axon(delta_e, configuration)
 
-	//go DendriteWeb(delta_e, configuration)
-	log.Printf("Starting Dendrite\n")
+	go DendriteWeb(delta_e, configuration)
+	fmt.Printf("Starting Dendrite\n")
 	DendriteCam(delta_e, configuration)
 
-	// for true {
-	// 	time.Sleep(1 * time.Second)
-	// }
+	for true {
+		time.Sleep(1 * time.Second)
+	}
 }

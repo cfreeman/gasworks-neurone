@@ -30,7 +30,6 @@ import "C"
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"unsafe"
 )
@@ -53,7 +52,7 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 
 	// The magnitude of accumulated flow forms our change in energy for the frame.
 	deltaE := math.Sqrt((dx * dx) + (dy * dy))
-	log.Printf("INFO: f[%f] \n", deltaE)
+	fmt.Printf("INFO: f[%f] \n", deltaE)
 
 	// Clamp the energy to start at 0 for 'still' frames with little/no motion.
 	deltaE = math.Max(0.0, (deltaE - config.MovementThreshold))
@@ -65,24 +64,20 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 }
 
 func DendriteCam(delta_e chan float32, config Configuration) {
-	fmt.Printf("CAM!\n")
 	camera := C.cvCaptureFromCAM(-1)
 
 	// Shutdown dendrite if no camera detected.
 	if camera == nil {
-		fmt.Printf("CAM!X\n")
-		//log.Fatalf("ERROR: No camera detected. Shutting down DendriteCam\n")
+		fmt.Printf("ERROR: No camera detected. Shutting down DendriteCam\n")
 		return
 	}
 
-	fmt.Printf("CAM!A\n")
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_WIDTH, 160)
 	C.cvSetCaptureProperty(camera, C.CV_CAP_PROP_FRAME_HEIGHT, 120)
 
 	// Capture original frame.
 	prev := C.cvCloneImage(C.cvQueryFrame(camera))
 
-	fmt.Printf("CAM!B\n")
 	// file := C.CString("a.png")
 	// C.cvSaveImage(file, unsafe.Pointer(prev), nil)
 	// C.free(unsafe.Pointer(file))
@@ -92,7 +87,6 @@ func DendriteCam(delta_e chan float32, config Configuration) {
 	nextG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
 	C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
 
-	fmt.Printf("CAM!C\n")
 	for true {
 		C.cvGrabFrame(camera)
 
