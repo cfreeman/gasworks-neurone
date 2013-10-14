@@ -50,21 +50,29 @@ type Neurone struct {
 
 type stateFn func(neurone Neurone) (sF stateFn, newNeurone Neurone)
 
-// updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
-// on failure, nil otherwise. Arduino code takes the energy level and turns it into a lighting sequence.
-func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
+func sendArduinoCommand(command byte, argument float32, serialPort io.ReadWriteCloser) error {
+	// Package argument for transmission
 	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.LittleEndian, energy)
+	err := binary.Write(buf, binary.LittleEndian, argument)
 	if err != nil {
 		return err
 	}
 
-	_, err = serialPort.Write(buf.Bytes())
-	if err != nil {
-		return err
+	// Transmit command and argument down the pipe.
+	for _, v := range [][]byte{[]byte{command}, buf.Bytes()} {
+		_, err = serialPort.Write(v)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
+}
+
+// updateArduinoEnergy transmits a new energy level over the nominated serial port to the arduino. Returns an error
+// on failure, nil otherwise. Arduino code takes the energy level and turns it into a lighting sequence.
+func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
+	return sendArduinoCommand('e', energy, serialPort)
 }
 
 // findArduino looks for the file that represents the arduino serial connection. Returns the fully qualified path
