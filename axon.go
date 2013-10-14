@@ -30,13 +30,17 @@ import (
 	"time"
 )
 
-const WAIT_LENGTH = 30.0
+const WAIT_LENGTH = 3.0
 
-const WAIT_TIMEOUT = 400.0
+const WAIT_TIMEOUT = 4.0
 
 const STARTUP_LENGTH = 20.0
 
 const COOLDOWN_LENGTH = 4.0
+
+const POWERUP_LENGTH = 4.0
+
+const POWERUP_THRESHOLD = 0.45
 
 const NANO_TO_SECONDS = 1000000000.0
 
@@ -48,8 +52,10 @@ type Neurone struct {
 	config   Configuration
 }
 
-type stateFn func(neurone Neurone) (sF stateFn, newNeurone Neurone)
+type stateFn func(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone)
 
+// sendArduinoCommand transmits a new command over the numonated serial port to the arduino. Returns an
+// error on failure. Each command is identified by a single byte and may take one argument (a float).
 func sendArduinoCommand(command byte, argument float32, serialPort io.ReadWriteCloser) error {
 	// Package argument for transmission
 	buf := new(bytes.Buffer)
@@ -75,6 +81,12 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
 	return sendArduinoCommand('e', energy, serialPort)
 }
 
+// flashAnimateArduino puts the arduino into a short powerup animation, indicating that the neurone has recieved a
+// large burst of energy. Returns an error on failure, nil otherwise.
+func flashAnimateArduino(serialPort io.ReadWriteCloser) error {
+	return sendArduinoCommand('a', 0.0, serialPort)
+}
+
 // findArduino looks for the file that represents the arduino serial connection. Returns the fully qualified path
 // to the device if we are able to find a likely candidate for an arduino, otherwise an empty string if unable to
 // find an arduino device.
@@ -95,7 +107,7 @@ func findArduino() string {
 
 // wait puts the neurone in a holding state untill all the raspberry pi's have started up. Then
 // puts all the neurones through a non-interactive animated sequence.
-func wait(neurone Neurone) (sF stateFn, newNeurone Neurone) {
+func wait(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone) {
 	// Calculate how many seconds have elapsed since this cooldown state started.
 	dt := float64(time.Now().UnixNano()-neurone.start) / NANO_TO_SECONDS
 
@@ -136,16 +148,26 @@ func wait(neurone Neurone) (sF stateFn, newNeurone Neurone) {
 
 // startup puts the neurone through a non-interactive animated sequence before entering the animated
 // mode.
-func startup(neurone Neurone) (sF stateFn, newNeurone Neurone) {
+func startup(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone) {
 
 	// The warmup animation and cooldown animation are the same, just over different durations.
-	return cooldown(neurone)
+	return cooldown(neurone, serialPort)
 }
 
 // accumulate pulls energy off the dendrites and accumulates it within the neurone. When the neurone reaches
 // critical it fires into the axon (the web dendrites of adjacent neurones) and enters the cooldown state.
-func accumulate(neurone Neurone) (sF stateFn, newNeurone Neurone) {
-	newEnergy := neurone.energy + <-neurone.deltaE
+func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone) {
+	de := <-neurone.deltaE
+
+	// If the energy level jumps by a large amount, another neuron has fired. Run a power
+	// up flash animation.
+	if de > POWERUP_THRESHOLD {
+		fmt.Printf("INFO: powerup!\n")
+		flashAnimateArduino(serialPort)
+		return powerup, Neurone{neurone.energy, neurone.deltaE, POWERUP_LENGTH, time.Now().UnixNano(), neurone.config}
+	}
+
+	newEnergy := neurone.energy + de
 
 	// Neurone has reached threshold. Fire axon.
 	if newEnergy > 1.0 {
@@ -165,9 +187,8 @@ func accumulate(neurone Neurone) (sF stateFn, newNeurone Neurone) {
 	return accumulate, Neurone{newEnergy, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
 }
 
-// cooldown allows the neurone to cooldown after firing into the axon, it pauses accumulation by the
-// nominated duration before starting accumulation of energy from the dendrites again.
-func cooldown(neurone Neurone) (sF stateFn, newNeurone Neurone) {
+// calcDt calculates the change in seconds since an animation was started.
+func calcDt(neurone Neurone) float64 {
 	// Drain off and ignore changes in energy from the dendrites.
 	select {
 	case <-neurone.deltaE:
@@ -175,7 +196,25 @@ func cooldown(neurone Neurone) (sF stateFn, newNeurone Neurone) {
 	}
 
 	// Calculate how many seconds have elapsed since this cooldown state started.
-	dt := float64(time.Now().UnixNano()-neurone.start) / NANO_TO_SECONDS
+	return float64(time.Now().UnixNano()-neurone.start) / NANO_TO_SECONDS
+}
+
+// powerup allows the neurone to display a large jump in energy to the neurone. It pauses the accumlation
+// by the nominated duration before starting accumulation of energy from the dendrites again.
+func powerup(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone) {
+	dt := calcDt(neurone)
+
+	if dt >= neurone.duration {
+		return accumulate, Neurone{neurone.energy, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
+	}
+
+	return powerup, neurone
+}
+
+// cooldown allows the neurone to cooldown after firing into the axon, it pauses accumulation by the
+// nominated duration before starting accumulation of energy from the dendrites again.
+func cooldown(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone) {
+	dt := calcDt(neurone)
 
 	// LERP neurone energy from -1.0 to 0.0 over the duration of the cooldown.
 	newEnergy := float32(dt/neurone.duration) - 1.0
@@ -203,7 +242,7 @@ func Axon(deltaE chan float32, config Configuration) {
 	state := wait
 
 	for true {
-		state, newNeurone = state(oldNeurone)
+		state, newNeurone = state(oldNeurone, s)
 
 		// If we have a valid serial connection to an arduino, update the energy level on the arduino.
 		if s != nil && newNeurone.energy != oldNeurone.energy {
