@@ -158,16 +158,15 @@ func startup(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeu
 // critical it fires into the axon (the web dendrites of adjacent neurones) and enters the cooldown state.
 func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone) {
 	de := <-neurone.deltaE
+	newEnergy := neurone.energy + de
 
 	// If the energy level jumps by a large amount, another neuron has fired. Run a power
 	// up flash animation.
 	if de > POWERUP_THRESHOLD {
 		fmt.Printf("INFO: powerup!\n")
 		flashAnimateArduino(serialPort)
-		return powerup, Neurone{neurone.energy, neurone.deltaE, POWERUP_LENGTH, time.Now().UnixNano(), neurone.config}
+		return powerup, Neurone{newEnergy, neurone.deltaE, POWERUP_LENGTH, time.Now().UnixNano(), neurone.config}
 	}
-
-	newEnergy := neurone.energy + de
 
 	// Neurone has reached threshold. Fire axon.
 	if newEnergy > 1.0 {

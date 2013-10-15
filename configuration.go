@@ -40,7 +40,7 @@ type Configuration struct {
 
 func ParseConfiguration(configFile string) (configuration Configuration, err error) {
 	// Create a default configuration.
-	config := Configuration{1000.0, 1.0, ":8080", []AdjacentNeurone{}, false, []AdjacentNeurone{}}
+	config := Configuration{300.0, 1.0, ":8080", []AdjacentNeurone{}, false, []AdjacentNeurone{}}
 
 	// Open the configuration file.
 	file, err := os.Open(configFile)
