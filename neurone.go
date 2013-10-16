@@ -20,6 +20,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -29,7 +30,13 @@ import (
 // We have one axon which transmits energy to adjacent neurones.
 func main() {
 	fmt.Printf("Gasworks neurone\n")
-	configuration, _ := ParseConfiguration("/home/pi/gasworks/neurone/bin/gasworks.json")
+
+	configFile := "/home/pi/gasworks/neurone/bin/gasworks.json"
+	if len(os.Args) > 1 {
+		configFile = os.Args[1]
+	}
+
+	configuration, _ := ParseConfiguration(configFile)
 	delta_e := make(chan float32)
 
 	go Axon(delta_e, configuration)
