@@ -38,7 +38,7 @@ const STARTUP_LENGTH = 20.0
 
 const COOLDOWN_LENGTH = 4.0
 
-const POWERUP_LENGTH = 4.0
+const POWERUP_LENGTH = 3.0
 
 const POWERUP_THRESHOLD = 0.45
 
@@ -165,6 +165,10 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 	if de > POWERUP_THRESHOLD {
 		fmt.Printf("INFO: powerup!\n")
 		flashAnimateArduino(serialPort)
+		if newEnergy > 1.0 {
+			newEnergy = 0.0
+		}
+
 		return powerup, Neurone{newEnergy, neurone.deltaE, POWERUP_LENGTH, time.Now().UnixNano(), neurone.config}
 	}
 
