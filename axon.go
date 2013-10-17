@@ -30,9 +30,9 @@ import (
 	"time"
 )
 
-const WAIT_LENGTH = 0.0
+const WAIT_LENGTH = 3.0
 
-const WAIT_TIMEOUT = 0.0
+const WAIT_TIMEOUT = 4.0
 
 const STARTUP_LENGTH = 20.0
 
