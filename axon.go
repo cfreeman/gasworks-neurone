@@ -30,9 +30,9 @@ import (
 	"time"
 )
 
-const WAIT_LENGTH = 3.0
+const WAIT_LENGTH = 0.0
 
-const WAIT_TIMEOUT = 4.0
+const WAIT_TIMEOUT = 0.0
 
 const STARTUP_LENGTH = 20.0
 
@@ -81,9 +81,15 @@ func updateArduinoEnergy(energy float32, serialPort io.ReadWriteCloser) error {
 	return sendArduinoCommand('e', energy, serialPort)
 }
 
-// flashAnimateArduino puts the arduino into a short powerup animation, indicating that the neurone has recieved a
+// cooldownArduino transmits updates the cooldown lighting sequence on the arduino. Returns an error on failure, nil
+// otherwise.
+func cooldownArduino(energy float32, serialPort io.ReadWriteCloser) error {
+	return sendArduinoCommand('c', energy, serialPort)
+}
+
+// powerupArduino puts the arduino into a short powerup animation, indicating that the neurone has recieved a
 // large burst of energy. Returns an error on failure, nil otherwise.
-func flashAnimateArduino(serialPort io.ReadWriteCloser) error {
+func powerupArduino(serialPort io.ReadWriteCloser) error {
 	return sendArduinoCommand('a', 0.0, serialPort)
 }
 
@@ -164,7 +170,7 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 	// up flash animation.
 	if de > POWERUP_THRESHOLD {
 		fmt.Printf("INFO: powerup!\n")
-		flashAnimateArduino(serialPort)
+		powerupArduino(serialPort)
 		if newEnergy > 1.0 {
 			newEnergy = 0.0
 		}
@@ -187,6 +193,7 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 		return cooldown, Neurone{-1.0, neurone.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neurone.config}
 	}
 
+	updateArduinoEnergy(newEnergy, serialPort)
 	return accumulate, Neurone{newEnergy, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
 }
 
@@ -227,6 +234,7 @@ func cooldown(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNe
 		return accumulate, Neurone{newEnergy, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
 	}
 
+	cooldownArduino(newEnergy, serialPort)
 	return cooldown, Neurone{newEnergy, neurone.deltaE, neurone.duration, neurone.start, neurone.config}
 }
 
@@ -240,19 +248,12 @@ func Axon(deltaE chan float32, config Configuration) {
 	// When connecting to an older revision arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	newNeurone := Neurone{-2.0, deltaE, WAIT_LENGTH, time.Now().UnixNano(), config}
-	oldNeurone := newNeurone
+	neurone := Neurone{-2.0, deltaE, WAIT_LENGTH, time.Now().UnixNano(), config}
 	state := wait
 
 	for true {
-		state, newNeurone = state(oldNeurone, s)
+		state, neurone = state(neurone, s)
 
-		// If we have a valid serial connection to an arduino, update the energy level on the arduino.
-		if s != nil && newNeurone.energy != oldNeurone.energy {
-			updateArduinoEnergy(newNeurone.energy, s)
-		}
-
-		fmt.Printf("INFO: e[%f]\n", newNeurone.energy)
-		oldNeurone = newNeurone
+		fmt.Printf("INFO: e[%f]\n", neurone.energy)
 	}
 }
