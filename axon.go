@@ -166,18 +166,6 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 	de := <-neurone.deltaE
 	newEnergy := neurone.energy + de
 
-	// If the energy level jumps by a large amount, another neuron has fired. Run a power
-	// up flash animation.
-	if de > POWERUP_THRESHOLD {
-		fmt.Printf("INFO: powerup!\n")
-		powerupArduino(serialPort)
-		if newEnergy > 1.0 {
-			newEnergy = 0.0
-		}
-
-		return powerup, Neurone{newEnergy, neurone.deltaE, POWERUP_LENGTH, time.Now().UnixNano(), neurone.config}
-	}
-
 	// Neurone has reached threshold. Fire axon.
 	if newEnergy > 1.0 {
 		// Axon fires into the web dendrites of adjacent neurones.
@@ -190,7 +178,16 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 			fmt.Printf("INFO: a[" + address + "]\n")
 		}
 
-		return cooldown, Neurone{-1.0, neurone.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neurone.config}
+		return cooldown, Neurone{newEnergy, neurone.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neurone.config}
+	}
+
+	// If the energy level jumps by a large amount, another neuron has fired. Run a power
+	// up flash animation.
+	if de > POWERUP_THRESHOLD {
+		fmt.Printf("INFO: powerup!\n")
+
+		powerupArduino(serialPort)
+		return powerup, Neurone{newEnergy, neurone.deltaE, POWERUP_LENGTH, time.Now().UnixNano(), neurone.config}
 	}
 
 	updateArduinoEnergy(newEnergy, serialPort)
