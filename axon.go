@@ -58,20 +58,37 @@ type stateFn func(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, n
 // error on failure. Each command is identified by a single byte and may take one argument (a float).
 func sendArduinoCommand(command byte, argument float32, serialPort io.ReadWriteCloser) error {
 	// Package argument for transmission
-	buf := new(bytes.Buffer)
-	err := binary.Write(buf, binary.LittleEndian, argument)
+	bufOut := new(bytes.Buffer)
+	err := binary.Write(bufOut, binary.LittleEndian, argument)
 	if err != nil {
 		return err
 	}
 
 	// Transmit command and argument down the pipe.
-	for _, v := range [][]byte{[]byte{command}, buf.Bytes()} {
+	for _, v := range [][]byte{[]byte{command}, bufOut.Bytes()} {
 		_, err = serialPort.Write(v)
 		if err != nil {
 			return err
 		}
 	}
 
+	// Read the returning accelerometer values.
+	in := make([]byte, 128)
+	_, err = serialPort.Read(in)
+	if err != nil {
+		return err
+	}
+
+	var acc [3]int16
+	bufIn := bytes.NewBuffer(in)
+	for i, _ := range acc {
+		err = binary.Read(bufIn, binary.LittleEndian, &acc[i])
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Printf("INFO acc: [%d, %d, %d]\n", acc[0], acc[1], acc[2])
 	return nil
 }
 
@@ -178,6 +195,7 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 			fmt.Printf("INFO: a[" + address + "]\n")
 		}
 
+		fmt.Printf("INFO: cooldown!\n")
 		return cooldown, Neurone{newEnergy, neurone.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neurone.config}
 	}
 
