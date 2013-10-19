@@ -90,7 +90,7 @@ func cooldownArduino(energy float32, serialPort io.ReadWriteCloser) error {
 // powerupArduino puts the arduino into a short powerup animation, indicating that the neurone has recieved a
 // large burst of energy. Returns an error on failure, nil otherwise.
 func powerupArduino(serialPort io.ReadWriteCloser) error {
-	return sendArduinoCommand('a', 0.0, serialPort)
+	return sendArduinoCommand('p', 0.0, serialPort)
 }
 
 // findArduino looks for the file that represents the arduino serial connection. Returns the fully qualified path
@@ -227,11 +227,11 @@ func cooldown(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNe
 	dt := calcDt(neurone)
 
 	// LERP neurone energy from -1.0 to 0.0 over the duration of the cooldown.
-	newEnergy := float32(dt/neurone.duration) - 1.0
+	newEnergy := float32(dt / neurone.duration)
 
 	// If the time elapsed is longer than the duration of the cooldown, enter the accumulate state.
 	if dt >= neurone.duration {
-		return accumulate, Neurone{newEnergy, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
+		return accumulate, Neurone{0.0, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
 	}
 
 	cooldownArduino(newEnergy, serialPort)
