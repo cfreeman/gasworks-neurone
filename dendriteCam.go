@@ -36,14 +36,25 @@ import (
 
 func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 	var i C.int
-	var dx, dy float64
+	var dx, dy, mx, my float64
 
-	// Accumulate the change in flow across all the pixels.
 	totalPixels := flow.width * flow.height
+
+	// Determine mean movement vector.
 	for i = 0; i < totalPixels; i++ {
 		value := C.cvGet2D(unsafe.Pointer(flow), i/flow.width, i%flow.width)
-		dx += math.Abs(float64(value.val[0]))
-		dy += math.Abs(float64(value.val[1]))
+		mx += float64(value.val[0])
+		my += float64(value.val[1])
+	}
+	mx = math.Abs(mx / float64(totalPixels))
+	my = math.Abs(my / float64(totalPixels))
+
+	// Accumulate the change in flow across all the pixels.
+	for i = 0; i < totalPixels; i++ {
+		// Remove the mean movement vector to compenstate for any swaying in the wind that may occur.
+		value := C.cvGet2D(unsafe.Pointer(flow), i/flow.width, i%flow.width)
+		dx += math.Max((math.Abs(float64(value.val[0])) - mx), 0.0)
+		dy += math.Max((math.Abs(float64(value.val[1])) - my), 0.0)
 	}
 
 	// average out the magnitude of dx and dy across the whole image.
@@ -52,7 +63,7 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 
 	// The magnitude of accumulated flow forms our change in energy for the frame.
 	deltaE := math.Sqrt((dx * dx) + (dy * dy))
-	fmt.Printf("INFO: f[%f] \n", deltaE)
+	fmt.Printf("INFO: f:%f m:[%f,%f]\n", deltaE, mx, my)
 
 	// Clamp the energy to start at 0 for 'still' frames with little/no motion.
 	deltaE = math.Max(0.0, (deltaE - config.MovementThreshold))
