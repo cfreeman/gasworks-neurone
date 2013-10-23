@@ -51,7 +51,7 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 
 	// Accumulate the change in flow across all the pixels.
 	for i = 0; i < totalPixels; i++ {
-		// Remove the mean movement vector to compenstate for any swaying in the wind that may occur.
+		// Remove the mean movement vector to compenstate for the sculpture that might be swaying in the wind.
 		value := C.cvGet2D(unsafe.Pointer(flow), i/flow.width, i%flow.width)
 		dx += math.Max((math.Abs(float64(value.val[0])) - mx), 0.0)
 		dy += math.Max((math.Abs(float64(value.val[1])) - my), 0.0)
