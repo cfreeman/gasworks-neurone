@@ -72,23 +72,6 @@ func sendArduinoCommand(command byte, argument float32, serialPort io.ReadWriteC
 		}
 	}
 
-	// Read the returning accelerometer values.
-	in := make([]byte, 128)
-	_, err = serialPort.Read(in)
-	if err != nil {
-		return err
-	}
-
-	var acc [3]int16
-	bufIn := bytes.NewBuffer(in)
-	for i, _ := range acc {
-		err = binary.Read(bufIn, binary.LittleEndian, &acc[i])
-		if err != nil {
-			return err
-		}
-	}
-
-	fmt.Printf("INFO acc: [%d, %d, %d]\n", acc[0], acc[1], acc[2])
 	return nil
 }
 
