@@ -89,9 +89,10 @@ func DendriteCam(delta_e chan float32, config Configuration) {
 	// Capture original frame.
 	prev := C.cvCloneImage(C.cvQueryFrame(camera))
 
-	// file := C.CString("a.png")
-	// C.cvSaveImage(file, unsafe.Pointer(prev), nil)
-	// C.free(unsafe.Pointer(file))
+	// Save out the first frame for debuging purposes.
+	file := C.CString("frame.png")
+	C.cvSaveImage(file, unsafe.Pointer(prev), nil)
+	C.free(unsafe.Pointer(file))
 
 	flow := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_32F, 2)
 	prevG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)

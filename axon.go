@@ -57,6 +57,10 @@ type stateFn func(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, n
 // sendArduinoCommand transmits a new command over the numonated serial port to the arduino. Returns an
 // error on failure. Each command is identified by a single byte and may take one argument (a float).
 func sendArduinoCommand(command byte, argument float32, serialPort io.ReadWriteCloser) error {
+	if serialPort == nil {
+		return nil
+	}
+
 	// Package argument for transmission
 	bufOut := new(bytes.Buffer)
 	err := binary.Write(bufOut, binary.LittleEndian, argument)
