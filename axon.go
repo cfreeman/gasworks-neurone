@@ -16,6 +16,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 package main
 
 import (
@@ -30,19 +31,15 @@ import (
 	"time"
 )
 
-const WAIT_LENGTH = 3.0
-
-const WAIT_TIMEOUT = 4.0
-
-const STARTUP_LENGTH = 20.0
-
-const COOLDOWN_LENGTH = 4.0
-
-const POWERUP_LENGTH = 3.0
-
-const POWERUP_THRESHOLD = 0.45
-
-const NANO_TO_SECONDS = 1000000000.0
+const (
+	WAIT_LENGTH       = 3.0
+	WAIT_TIMEOUT      = 4.0
+	STARTUP_LENGTH    = 20.0
+	COOLDOWN_LENGTH   = 4.0
+	POWERUP_LENGTH    = 3.0
+	POWERUP_THRESHOLD = 0.45
+	NANO_TO_SECONDS   = 1000000000.0
+)
 
 type Neurone struct {
 	energy   float32
@@ -242,7 +239,7 @@ func cooldown(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNe
 
 // Axon listens to the dentrites on the deltaE channel, and embodies an artificial neurone. When the energy
 // of the neurone reaches a maximum, it fires into the axon (the web dendites of adjacent neurones).
-func Axon(deltaE chan float32, config Configuration) {
+func axon(deltaE chan float32, config Configuration) {
 	// Find the device that represents the arduino serial connection.
 	c := &goserial.Config{Name: findArduino(), Baud: 9600}
 	s, _ := goserial.OpenPort(c)
@@ -253,7 +250,7 @@ func Axon(deltaE chan float32, config Configuration) {
 	neurone := Neurone{-2.0, deltaE, WAIT_LENGTH, time.Now().UnixNano(), config}
 	state := wait
 
-	for true {
+	for {
 		state, neurone = state(neurone, s)
 
 		fmt.Printf("INFO: e[%f]\n", neurone.energy)

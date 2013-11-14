@@ -16,6 +16,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 package main
 
 import (
@@ -24,12 +25,12 @@ import (
 	"strconv"
 )
 
-func DendriteWeb(delta_e chan float32, config Configuration) {
+func dendriteWeb(delta_e chan float32, config Configuration) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		i, err := strconv.ParseFloat(r.FormValue("e"), 32)
 
 		if err == nil {
-			fmt.Printf("Adjacent neurone fired %d! ***** \n", i)
+			fmt.Printf("Adjacent neurone fired %f! ***** \n", i)
 			delta_e <- float32(i)
 		}
 	})

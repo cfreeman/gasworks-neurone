@@ -16,12 +16,13 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 package main
 
 import "testing"
 
 func TestMissingConfiguration(t *testing.T) {
-	config, err := ParseConfiguration("foo")
+	config, err := parseConfiguration("foo")
 	if err == nil {
 		t.Errorf("error not raised for invalid configuration file.")
 	}
@@ -44,7 +45,7 @@ func TestMissingConfiguration(t *testing.T) {
 }
 
 func TestValidConfiguration(t *testing.T) {
-	config, err := ParseConfiguration("testdata/test-config.json")
+	config, err := parseConfiguration("testdata/test-config.json")
 	if err != nil {
 		t.Errorf("returned error when parsing valid configuration file")
 	}

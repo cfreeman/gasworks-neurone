@@ -16,12 +16,12 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 package main
 
 import (
 	"fmt"
 	"os"
-	"time"
 )
 
 // We have two different kinds of dendrite. One on a webcam, that increases the energy of the neurone
@@ -36,16 +36,18 @@ func main() {
 		configFile = os.Args[1]
 	}
 
-	configuration, _ := ParseConfiguration(configFile)
+	configuration, _ := parseConfiguration(configFile)
 	delta_e := make(chan float32)
 
-	go Axon(delta_e, configuration)
+	fmt.Println("Starting Axon")
+	go axon(delta_e, configuration)
 
-	go DendriteWeb(delta_e, configuration)
-	fmt.Printf("Starting Dendrite\n")
-	DendriteCam(delta_e, configuration)
+	fmt.Println("Starting Web Dendrite")
+	go dendriteWeb(delta_e, configuration)
 
-	for true {
-		time.Sleep(1 * time.Second)
-	}
+	fmt.Printf("Starting Camera Dendrite\n")
+	dendriteCam(delta_e, configuration)
+
+	// Make sure we block if no webcam is found and DendriteCam returns straight away.
+	select {}
 }

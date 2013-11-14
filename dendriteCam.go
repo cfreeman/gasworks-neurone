@@ -16,6 +16,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 package main
 
 // #cgo darwin CFLAGS: -I/opt/local/include -I/opt/local/include/opencv
@@ -74,7 +75,7 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 	return deltaE
 }
 
-func DendriteCam(delta_e chan float32, config Configuration) {
+func dendriteCam(delta_e chan float32, config Configuration) {
 	camera := C.cvCaptureFromCAM(-1)
 
 	// Shutdown dendrite if no camera detected.
@@ -99,7 +100,7 @@ func DendriteCam(delta_e chan float32, config Configuration) {
 	nextG := C.cvCreateImage(C.cvSize(prev.width, prev.height), C.IPL_DEPTH_8U, 1)
 	C.cvConvertImage(unsafe.Pointer(prev), unsafe.Pointer(prevG), 0)
 
-	for true {
+	for {
 		C.cvGrabFrame(camera)
 
 		// Capture the new frame and convert it to grayscale.
@@ -115,7 +116,6 @@ func DendriteCam(delta_e chan float32, config Configuration) {
 	}
 
 	C.cvReleaseImage(&prev)
-
 	C.cvReleaseImage(&nextG)
 	C.cvReleaseImage(&prevG)
 	C.cvReleaseImage(&flow)

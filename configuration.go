@@ -16,6 +16,7 @@
  * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
 package main
 
 import (
@@ -38,7 +39,7 @@ type Configuration struct {
 	AllNeurones   []AdjacentNeurone
 }
 
-func ParseConfiguration(configFile string) (configuration Configuration, err error) {
+func parseConfiguration(configFile string) (configuration Configuration, err error) {
 	// Create a default configuration.
 	config := Configuration{300.0, 1.0, ":8080", []AdjacentNeurone{}, false, []AdjacentNeurone{}}
 
