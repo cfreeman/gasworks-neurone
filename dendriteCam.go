@@ -115,9 +115,10 @@ func dendriteCam(delta_e chan float32, config Configuration) {
 		prev = next
 	}
 
-	C.cvReleaseImage(&prev)
-	C.cvReleaseImage(&nextG)
-	C.cvReleaseImage(&prevG)
-	C.cvReleaseImage(&flow)
-	C.cvReleaseCapture(&camera)
+	// Never reached - but here in comments for completeness.
+	//C.cvReleaseImage(&prev)
+	//C.cvReleaseImage(&nextG)
+	//C.cvReleaseImage(&prevG)
+	//C.cvReleaseImage(&flow)
+	//C.cvReleaseCapture(&camera)
 }
