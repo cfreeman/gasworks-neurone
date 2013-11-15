@@ -37,16 +37,16 @@ func main() {
 	}
 
 	configuration, _ := parseConfiguration(configFile)
-	delta_e := make(chan float32)
+	deltaE := make(chan float32)
 
 	fmt.Println("Starting Axon")
-	go axon(delta_e, configuration)
+	go axon(deltaE, configuration)
 
 	fmt.Println("Starting Web Dendrite")
-	go dendriteWeb(delta_e, configuration)
+	go dendriteWeb(deltaE, configuration)
 
 	fmt.Printf("Starting Camera Dendrite\n")
-	dendriteCam(delta_e, configuration)
+	dendriteCam(deltaE, configuration)
 
 	// Make sure we block if no webcam is found and DendriteCam returns straight away.
 	select {}

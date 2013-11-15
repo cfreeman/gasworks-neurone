@@ -39,12 +39,12 @@ type Configuration struct {
 	AllNeurones   []AdjacentNeurone
 }
 
-func parseConfiguration(config_file string) (configuration Configuration, err error) {
+func parseConfiguration(configFile string) (configuration Configuration, err error) {
 	// Create a default configuration.
 	config := Configuration{300.0, 1.0, ":8080", []AdjacentNeurone{}, false, []AdjacentNeurone{}}
 
 	// Open the configuration file.
-	file, err := os.Open(config_file)
+	file, err := os.Open(configFile)
 	if err != nil {
 		return config, err
 	}

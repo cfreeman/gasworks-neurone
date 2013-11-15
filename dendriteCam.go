@@ -75,7 +75,7 @@ func calcDeltaEnergy(flow *C.IplImage, config *Configuration) float64 {
 	return deltaE
 }
 
-func dendriteCam(delta_e chan float32, config Configuration) {
+func dendriteCam(deltaE chan float32, config Configuration) {
 	camera := C.cvCaptureFromCAM(-1)
 
 	// Shutdown dendrite if no camera detected.
@@ -109,7 +109,7 @@ func dendriteCam(delta_e chan float32, config Configuration) {
 		C.cvConvertImage(unsafe.Pointer(next), unsafe.Pointer(nextG), 0)
 
 		C.cvCalcOpticalFlowFarneback(unsafe.Pointer(prevG), unsafe.Pointer(nextG), unsafe.Pointer(flow), 0.5, 2, 5, 2, 5, 1.1, 0)
-		delta_e <- float32(calcDeltaEnergy(flow, &config))
+		deltaE <- float32(calcDeltaEnergy(flow, &config))
 
 		C.cvReleaseImage(&prev)
 		prev = next

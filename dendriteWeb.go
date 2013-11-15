@@ -25,13 +25,13 @@ import (
 	"strconv"
 )
 
-func dendriteWeb(delta_e chan float32, config Configuration) {
+func dendriteWeb(deltaE chan float32, config Configuration) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		i, err := strconv.ParseFloat(r.FormValue("e"), 32)
 
 		if err == nil {
 			fmt.Printf("Adjacent neurone fired %f! ***** \n", i)
-			delta_e <- float32(i)
+			deltaE <- float32(i)
 		}
 	})
 
