@@ -27,7 +27,7 @@ func TestMissingConfiguration(t *testing.T) {
 		t.Errorf("error not raised for invalid configuration file.")
 	}
 
-	if config.OpticalFlowScale != 1000.0 {
+	if config.OpticalFlowScale != 300.0 {
 		t.Errorf("incorrect default optical flow scale.")
 	}
 

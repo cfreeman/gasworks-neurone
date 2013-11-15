@@ -32,13 +32,13 @@ import (
 )
 
 const (
-	WAIT_LENGTH       = 3.0
-	WAIT_TIMEOUT      = 4.0
-	STARTUP_LENGTH    = 20.0
-	COOLDOWN_LENGTH   = 4.0
-	POWERUP_LENGTH    = 3.0
-	POWERUP_THRESHOLD = 0.45
-	NANO_TO_SECONDS   = 1000000000.0
+	WaitLength       = 3.0
+	WaitTimeout      = 4.0
+	StartupLength    = 20.0
+	CooldownLength   = 4.0
+	PowerupLength    = 3.0
+	PowerupThreshold = 0.45
+	NanoToSeconds    = 1000000000.0
 )
 
 type Neurone struct {
@@ -116,7 +116,7 @@ func findArduino() string {
 // puts all the neurones through a non-interactive animated sequence.
 func wait(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone) {
 	// Calculate how many seconds have elapsed since this cooldown state started.
-	dt := float64(time.Now().UnixNano()-neurone.start) / NANO_TO_SECONDS
+	dt := float64(time.Now().UnixNano()-neurone.start) / NanoToSeconds
 
 	if neurone.config.MasterNeurone {
 		// Drain off an ignore energy from the dendrites.
@@ -135,14 +135,14 @@ func wait(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeuron
 				fmt.Printf("INFO: S[" + address + "]\n")
 			}
 
-			return startup, Neurone{0.0, neurone.deltaE, STARTUP_LENGTH, time.Now().UnixNano(), neurone.config}
+			return startup, Neurone{0.0, neurone.deltaE, StartupLength, time.Now().UnixNano(), neurone.config}
 		}
 	} else {
 		// Neurone is not the master, wait to be notified by the master before startup.
 		de := <-neurone.deltaE
 		if de < -0.5 {
-			return startup, Neurone{0.0, neurone.deltaE, STARTUP_LENGTH, time.Now().UnixNano(), neurone.config}
-		} else if dt >= WAIT_TIMEOUT {
+			return startup, Neurone{0.0, neurone.deltaE, StartupLength, time.Now().UnixNano(), neurone.config}
+		} else if dt >= WaitTimeout {
 
 			// If for some reason we don't get notified by the master neurone to enter the animation, just jump
 			// straight to interactive mode.
@@ -180,16 +180,16 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 		}
 
 		fmt.Printf("INFO: cooldown!\n")
-		return cooldown, Neurone{newEnergy, neurone.deltaE, COOLDOWN_LENGTH, time.Now().UnixNano(), neurone.config}
+		return cooldown, Neurone{newEnergy, neurone.deltaE, CooldownLength, time.Now().UnixNano(), neurone.config}
 	}
 
 	// If the energy level jumps by a large amount, another neuron has fired. Run a power
 	// up flash animation.
-	if de > POWERUP_THRESHOLD {
+	if de > PowerupThreshold {
 		fmt.Printf("INFO: powerup!\n")
 
 		powerupArduino(serialPort)
-		return powerup, Neurone{newEnergy, neurone.deltaE, POWERUP_LENGTH, time.Now().UnixNano(), neurone.config}
+		return powerup, Neurone{newEnergy, neurone.deltaE, PowerupLength, time.Now().UnixNano(), neurone.config}
 	}
 
 	updateArduinoEnergy(newEnergy, serialPort)
@@ -205,7 +205,7 @@ func calcDt(neurone Neurone) float64 {
 	}
 
 	// Calculate how many seconds have elapsed since this cooldown state started.
-	return float64(time.Now().UnixNano()-neurone.start) / NANO_TO_SECONDS
+	return float64(time.Now().UnixNano()-neurone.start) / NanoToSeconds
 }
 
 // powerup allows the neurone to display a large jump in energy to the neurone. It pauses the accumlation
@@ -247,7 +247,7 @@ func axon(deltaE chan float32, config Configuration) {
 	// When connecting to an older revision arduino, you need to wait a little while it resets.
 	time.Sleep(1 * time.Second)
 
-	neurone := Neurone{-2.0, deltaE, WAIT_LENGTH, time.Now().UnixNano(), config}
+	neurone := Neurone{-2.0, deltaE, WaitLength, time.Now().UnixNano(), config}
 	state := wait
 
 	for {
