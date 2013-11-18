@@ -45,7 +45,7 @@ func main() {
 	fmt.Println("Starting Web Dendrite")
 	go dendriteWeb(deltaE, configuration)
 
-	fmt.Printf("Starting Camera Dendrite\n")
+	fmt.Println("Starting Camera Dendrite")
 	dendriteCam(deltaE, configuration)
 
 	// Make sure we block if no webcam is found and DendriteCam returns straight away.
