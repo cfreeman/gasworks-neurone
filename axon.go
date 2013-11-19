@@ -34,7 +34,7 @@ import (
 const (
 	waitLength       = 60.0
 	waitTimeout      = 120.0
-	startupLength    = 20.0
+	startupLength    = 63.0
 	cooldownLength   = 4.0
 	powerupLength    = 3.0
 	powerupThreshold = 0.45
@@ -157,7 +157,7 @@ func wait(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeuron
 // mode.
 func startup(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, newNeurone Neurone) {
 
-	// The warmup animation and cooldown animation are the same, just over different durations.
+	// The startup animation and cooldown animation are the same, just over different durations.
 	return cooldown(neurone, serialPort)
 }
 
