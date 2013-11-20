@@ -32,12 +32,12 @@ import (
 )
 
 const (
-	waitLength       = 60.0
+	waitLength       = 1.0
 	waitTimeout      = 120.0
 	startupLength    = 63.0
-	cooldownLength   = 4.0
-	powerupLength    = 3.0
-	powerupThreshold = 0.45
+	cooldownLength   = 30.0
+	powerupLength    = 30.0
+	powerupThreshold = 0.25
 	nanoToSeconds    = 1000000000.0
 )
 
@@ -191,6 +191,8 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 		powerupArduino(serialPort)
 		return powerup, Neurone{newEnergy, neurone.deltaE, powerupLength, time.Now().UnixNano(), neurone.config}
 	}
+
+	// Slowly decay the energy of the neurone over time.
 
 	updateArduinoEnergy(newEnergy, serialPort)
 	return accumulate, Neurone{newEnergy, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
