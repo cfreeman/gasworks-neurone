@@ -39,6 +39,7 @@ const (
 	powerupLength    = 30.0
 	powerupThreshold = 0.25
 	nanoToSeconds    = 1000000000.0
+	decayPerSecond   = 0.00417
 )
 
 type Neurone struct {
@@ -193,6 +194,13 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 	}
 
 	// Slowly decay the energy of the neurone over time.
+	dt := float64(time.Now().UnixNano()-neurone.start) / nanoToSeconds
+	newEnergy = newEnergy - float32(dt*decayPerSecond)
+
+	// Ensure the energy of the neurone is never below zero.
+	if newEnergy < 0.0 {
+		newEnergy = 0.0
+	}
 
 	updateArduinoEnergy(newEnergy, serialPort)
 	return accumulate, Neurone{newEnergy, neurone.deltaE, 0.0, time.Now().UnixNano(), neurone.config}
