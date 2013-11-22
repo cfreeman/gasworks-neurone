@@ -25,13 +25,15 @@ import (
 )
 
 type AdjacentNeurone struct {
-	Transfer float64
+	Transfer float32
 	Address  string
 }
 
 type Configuration struct {
 	OpticalFlowScale  float64
 	MovementThreshold float64
+	DecayPerSecond    float64
+	PowerUpThreshold  float32
 	ListenAddress     string
 	AdjacentNeurones  []AdjacentNeurone
 
@@ -41,7 +43,7 @@ type Configuration struct {
 
 func parseConfiguration(configFile string) (configuration Configuration, err error) {
 	// Create a default configuration.
-	config := Configuration{300.0, 1.0, ":8080", []AdjacentNeurone{}, false, []AdjacentNeurone{}}
+	config := Configuration{300.0, 1.0, 0.00217, 0.25, ":8080", []AdjacentNeurone{}, false, []AdjacentNeurone{}}
 
 	// Open the configuration file.
 	file, err := os.Open(configFile)

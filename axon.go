@@ -32,14 +32,12 @@ import (
 )
 
 const (
-	waitLength       = 1.0
-	waitTimeout      = 120.0
-	startupLength    = 63.0
-	cooldownLength   = 30.0
-	powerupLength    = 30.0
-	powerupThreshold = 0.25
-	nanoToSeconds    = 1000000000.0
-	decayPerSecond   = 0.00417
+	waitLength     = 60.0
+	waitTimeout    = 120.0
+	startupLength  = 63.0
+	cooldownLength = 20.0
+	powerupLength  = 26.0
+	nanoToSeconds  = 1000000000.0
 )
 
 type Neurone struct {
@@ -186,7 +184,7 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 
 	// If the energy level jumps by a large amount, another neuron has fired. Run a power
 	// up flash animation.
-	if de > powerupThreshold {
+	if de > neurone.config.PowerUpThreshold {
 		fmt.Printf("INFO: powerup!\n")
 
 		powerupArduino(serialPort)
@@ -195,7 +193,7 @@ func accumulate(neurone Neurone, serialPort io.ReadWriteCloser) (sF stateFn, new
 
 	// Slowly decay the energy of the neurone over time.
 	dt := float64(time.Now().UnixNano()-neurone.start) / nanoToSeconds
-	newEnergy = newEnergy - float32(dt*decayPerSecond)
+	newEnergy = newEnergy - float32(dt*neurone.config.DecayPerSecond)
 
 	// Ensure the energy of the neurone is never below zero.
 	if newEnergy < 0.0 {
