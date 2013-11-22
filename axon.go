@@ -32,8 +32,8 @@ import (
 )
 
 const (
-	waitLength     = 60.0
-	waitTimeout    = 120.0
+	waitLength     = 65.0
+	waitTimeout    = 150.0
 	startupLength  = 63.0
 	cooldownLength = 20.0
 	powerupLength  = 26.0
