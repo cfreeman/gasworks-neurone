@@ -5,5 +5,5 @@ Motion detecting software for Meagan Streader's and Michael Candy's installation
 
 **Credits:**
 
-* Artists: [Meagan Streader](https://meaganstreader.com/) and [Michael Candy](http://michaelcandy.com/)
+* Artists: [Meagan Streader](http://meaganstreader.com/) and [Michael Candy](http://michaelcandy.com/)
 * Hardware design development and assembly: [CINCO](http://bestcinco.com/)
